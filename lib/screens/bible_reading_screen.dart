@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../model/bible_models.dart';
 import '../services/bible_api_service.dart';
 import '../services/ai_service.dart';
+import '../services/recent_read_service.dart';
 
 class BibleReadingScreen extends StatefulWidget {
   final BibleBookModel book;
@@ -47,6 +49,19 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       _selectedVerseId = null;
       _selectedText    = null;
     });
+
+    /// 최근 읽은 리스트
+    await RecentReadService.save(
+      bookName:        widget.book.name,
+      bookEnglishName: widget.book.englishName,
+      bookId:          widget.book.id,
+      bookNameLong:    widget.book.nameLong,
+      bookGenre:       widget.book.genre,
+      bookNumber:      widget.book.number,
+      totalChapters:   widget.book.totalChapters,
+      chapter:         _currentChapter,
+    );
+
     try {
       final chapter = await BibleApiService.getChapter(
         bookNumber: widget.book.number,

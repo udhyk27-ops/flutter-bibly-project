@@ -6,21 +6,24 @@ import 'providers/theme_provider.dart';
 import 'services/bible_api_service.dart';
 import 'screens/home_screen.dart';
 
+// 👈 전역으로 선언
+final RouteObserver<ModalRoute> routeObserver = RouteObserver<ModalRoute>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   ConfigApiService().getRemoteConfig();
-  await BibleApiService.init(); // Hive 초기화
+  await BibleApiService.init();
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Bibly',
       debugShowCheckedModeBanner: false,
+      navigatorObservers: [routeObserver], // 전역 변수 사용
       theme: themeProvider.themeData,
       home: const HomeScreen(),
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/app_router.dart';
+import '../model/bible_models.dart';
 import '../services/bible_api_service.dart';
 import '../widgets/bottom_nav.dart';
 import 'bible_chapter_screen.dart';

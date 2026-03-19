@@ -1,12 +1,38 @@
 import 'package:flutter/material.dart';
+import '../main.dart';
 import '../widgets/top_bar.dart';
 import '../widgets/today_verse_card.dart';
 import '../widgets/main_menu_grid.dart';
 import '../widgets/recent_section.dart';
 import '../widgets/bottom_nav.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
+  int _recentKey = 0;
+
+  @override
+  void didPopNext() {
+    // 다른 화면에서 홈으로 돌아올 때 호출
+    setState(() => _recentKey++);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +52,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     const MainMenuGrid(),
                     const SizedBox(height: 20),
-                    const RecentSection(),
+                    RecentSection(key: ValueKey(_recentKey)), // 👈
                     const SizedBox(height: 20),
                   ],
                 ),
