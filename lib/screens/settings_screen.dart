@@ -1,3 +1,5 @@
+import 'package:Bibly/screens/webview_screen.dart';
+import 'package:Bibly/screens/webview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
@@ -789,15 +791,35 @@ class _AppInfo extends StatelessWidget {
         ),
         _SettingsRow(
           icon: Icons.lock_outline,
-          label: '개인정보 처리방침',
+          label: '개인정보처리방침',
           trailing: Icon(Icons.chevron_right, size: 18, color: cs.outline),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const WebViewScreen(
+                  url: 'https://udhyk27-ops.github.io/bibly/privacy',
+                  title: '개인정보처리방침',
+                )
+              ),
+            );
+          },
         ),
         _SettingsRowLast(
           icon: Icons.description_outlined,
           label: '이용약관',
           trailing: Icon(Icons.chevron_right, size: 18, color: cs.outline),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => const WebViewScreen(
+                    url: 'https://udhyk27-ops.github.io/bibly/terms',
+                    title: '이용약관',
+                  )
+              ),
+            );
+          },
         ),
       ],
     );

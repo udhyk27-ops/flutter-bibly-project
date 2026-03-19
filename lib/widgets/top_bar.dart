@@ -16,7 +16,7 @@ class TopBar extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('말씀과 찬양', style: tt.headlineSmall),
+              Text('Bibly', style: tt.headlineSmall),
               Text('오늘의 말씀 · 잠 3:5', style: tt.labelMedium),
             ],
           ),
