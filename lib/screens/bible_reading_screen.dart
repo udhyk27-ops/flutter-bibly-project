@@ -21,6 +21,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
   BibleChapterModel? _chapter;
   bool    _isLoading = true;
   String? _error;
+  bool _goingForward = true; // 다음 장이면 true, 이전 장이면 false
 
   int     _currentChapter  = 1;
   String? _selectedVerseId;
@@ -65,7 +66,10 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
 
   Future<void> _goToChapter(int chapter) async {
     if (chapter < 1 || chapter > widget.book.totalChapters) return;
-    setState(() => _currentChapter = chapter);
+    setState(() {
+      _goingForward  = chapter > _currentChapter;
+      _currentChapter = chapter;
+    });
     await _loadChapter();
   }
 
@@ -235,26 +239,37 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
             ),
             Expanded(
               child: _isLoading
-                  ? Center(
-                  child: CircularProgressIndicator(color: cs.primary))
+                  ? Center(child: CircularProgressIndicator(color: cs.primary))
                   : _error != null
-                  ? _ErrorView(
-                error:   _error!,
-                onRetry: _loadChapter,
-              )
+                  ? _ErrorView(error: _error!, onRetry: _loadChapter)
                   : _chapter == null
                   ? const SizedBox()
-                  : _VerseList(
-                verses:          _chapter!.verses,
-                selectedVerseId: _selectedVerseId,
-                aiAnswers:       _aiAnswers,
-                aiLoading:       _aiLoading,
-                fontSize:        _fontSize,
-                lineHeight:      _lineHeight,
-                onVerseTap:      _onVerseTap,
-                onAskAI:         _askAI,
-              ),
-            ),
+                  : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    switchInCurve: Curves.easeIn,
+                    switchOutCurve: Curves.easeOut,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: CurvedAnimation(
+                        parent: anim,
+                        curve: const Interval(0.4, 1.0),
+                      ),
+                      child: child,
+                    ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_currentChapter),
+                      child: _VerseList(
+                        verses:          _chapter!.verses,
+                        selectedVerseId: _selectedVerseId,
+                        aiAnswers:       _aiAnswers,
+                        aiLoading:       _aiLoading,
+                        fontSize:        _fontSize,
+                        lineHeight:      _lineHeight,
+                        onVerseTap:      _onVerseTap,
+                        onAskAI:         _askAI,
+                      ),
+                    ),
+                  ),
+                ),
             _BottomChapterNav(
               currentChapter: _currentChapter,
               totalChapters:  widget.book.totalChapters,
