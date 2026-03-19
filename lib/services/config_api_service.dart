@@ -16,9 +16,10 @@ class ConfigApiService {
   //   private 생성자
 
   // 인스턴스에 변수 저장
-  String appVersion = "";
-  String storeUrl = "";
+  String aosVersion = "";
   String aiModel = "";
+  String playStoreUrl = "";
+  String appStoreUrl = "";
 
   Future<void> getRemoteConfig() async {
 
@@ -32,8 +33,8 @@ class ConfigApiService {
       await rc.fetchAndActivate();
 
       aiModel = rc.getString('ai_model');
-      appVersion = rc.getString('app_version_aos');
-      storeUrl = rc.getString('store_aos');
+      aosVersion = rc.getString('app_version_aos');
+      playStoreUrl = rc.getString('store_aos');
 
     } catch (e) {
       debugPrint('REMOTE CONFIG ERROR: $e');

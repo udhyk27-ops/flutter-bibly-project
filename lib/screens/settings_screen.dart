@@ -1,9 +1,10 @@
 import 'package:Bibly/screens/webview_screen.dart';
-import 'package:Bibly/screens/webview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/theme_provider.dart';
 import '../core/app_theme.dart';
+import '../services/config_api_service.dart';
 import '../widgets/bottom_nav.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -767,7 +768,7 @@ class _AppInfo extends StatelessWidget {
         _SettingsRow(
           icon: Icons.info_outline,
           label: '버전',
-          subLabel: '1.0.0',
+          subLabel: ConfigApiService().aosVersion,
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
@@ -787,7 +788,9 @@ class _AppInfo extends StatelessWidget {
           icon: Icons.share_outlined,
           label: '앱 공유하기',
           trailing: Icon(Icons.chevron_right, size: 18, color: cs.outline),
-          onTap: () {},
+          onTap: () {
+            Share.share('Android: ${ConfigApiService().playStoreUrl}');
+          },
         ),
         _SettingsRow(
           icon: Icons.lock_outline,

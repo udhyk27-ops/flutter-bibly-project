@@ -18,6 +18,8 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   webview_flutter: ^4.0.0
+  connectivity_plus: ^6.0.0
+  share_plus: ^10.0.0 # 공유
 
   # Firebase Core
   firebase_core: ^3.10.1
