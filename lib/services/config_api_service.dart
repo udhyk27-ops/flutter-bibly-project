@@ -40,8 +40,6 @@ class ConfigApiService {
       privacyUrl = rc.getString('privacy');
       termsUrl = rc.getString('terms');
 
-      print('remote config : $aiModel');
-
     } catch (e) {
       debugPrint('REMOTE CONFIG ERROR: $e');
     }

@@ -500,51 +500,53 @@ class _BibleSettingsState extends State<_BibleSettings> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: cs.outline,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('번역본 선택',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface)),
-            const SizedBox(height: 12),
-            ...translations.map((t) => GestureDetector(
-              onTap: () {
-                setState(() => _translation = t);
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: cs.outline, width: 0.5),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.outline,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(t, style: tt.bodyMedium),
-                    if (_translation == t)
-                      Icon(Icons.check, size: 18, color: cs.primary),
-                  ],
-                ),
               ),
-            )),
-          ],
+              const SizedBox(height: 16),
+              Text('번역본 선택',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface)),
+              const SizedBox(height: 12),
+              ...translations.map((t) => GestureDetector(
+                onTap: () {
+                  setState(() => _translation = t);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: cs.outline, width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(t, style: tt.bodyMedium),
+                      if (_translation == t)
+                        Icon(Icons.check, size: 18, color: cs.primary),
+                    ],
+                  ),
+                ),
+              )),
+            ],
+          ),
         ),
       ),
     );
@@ -560,53 +562,55 @@ class _BibleSettingsState extends State<_BibleSettings> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: cs.outline,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text('언어 선택',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface)),
-            const SizedBox(height: 12),
-            ...languages.map((l) => GestureDetector(
-              onTap: () {
-                setState(() => _language = l);
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: cs.outline, width: 0.5),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  decoration: BoxDecoration(
+                    color: cs.outline,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(l,
-                        style: TextStyle(
-                            fontSize: 14, color: cs.onSurface)),
-                    if (_language == l)
-                      Icon(Icons.check, size: 18, color: cs.primary),
-                  ],
-                ),
               ),
-            )),
-          ],
+              const SizedBox(height: 16),
+              Text('언어 선택',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface)),
+              const SizedBox(height: 12),
+              ...languages.map((l) => GestureDetector(
+                onTap: () {
+                  setState(() => _language = l);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: cs.outline, width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l,
+                          style: TextStyle(
+                              fontSize: 14, color: cs.onSurface)),
+                      if (_language == l)
+                        Icon(Icons.check, size: 18, color: cs.primary),
+                    ],
+                  ),
+                ),
+              )),
+            ],
+          ),
         ),
       ),
     );
@@ -789,7 +793,7 @@ class _AppInfo extends StatelessWidget {
           label: '앱 공유하기',
           trailing: Icon(Icons.chevron_right, size: 18, color: cs.outline),
           onTap: () {
-            Share.share('Android: ${ConfigApiService().playStoreUrl}');
+            Share.share(ConfigApiService().playStoreUrl);
           },
         ),
         _SettingsRow(
@@ -800,8 +804,8 @@ class _AppInfo extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const WebViewScreen(
-                  url: 'https://udhyk27-ops.github.io/bibly/privacy',
+                builder: (_) => WebViewScreen(
+                  url: ConfigApiService().privacyUrl,
                   title: '개인정보처리방침',
                 )
               ),
@@ -816,8 +820,8 @@ class _AppInfo extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => const WebViewScreen(
-                    url: 'https://udhyk27-ops.github.io/bibly/terms',
+                  builder: (_) => WebViewScreen(
+                    url: ConfigApiService().termsUrl,
                     title: '이용약관',
                   )
               ),
