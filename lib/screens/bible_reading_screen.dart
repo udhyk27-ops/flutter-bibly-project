@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import '../services/bible_api_service.dart';
 import '../services/ai_service.dart';
-import '../providers/theme_provider.dart';
 
-/// 본문 + 절 탭 → AI 해석
 class BibleReadingScreen extends StatefulWidget {
   final BibleBookModel book;
-  final BibleChapterModel chapter;
+  final int            chapterNumber;
 
   const BibleReadingScreen({
     super.key,
     required this.book,
-    required this.chapter,
+    required this.chapterNumber,
   });
 
   @override
@@ -21,46 +18,41 @@ class BibleReadingScreen extends StatefulWidget {
 }
 
 class _BibleReadingScreenState extends State<BibleReadingScreen> {
-  List<BibleVerseModel> _verses    = [];
-  Map<String, String>   _contents  = {}; // verseId → 본문
-  bool    _isLoading   = true;
+  BibleChapterModel? _chapter;
+  bool    _isLoading = true;
   String? _error;
 
-  // 선택된 절
+  int     _currentChapter  = 1;
   String? _selectedVerseId;
   String? _selectedText;
 
-  // AI 답변 (verseId → 답변)
-  final Map<String, String>  _aiAnswers  = {};
-  final Map<String, bool>    _aiLoading  = {};
+  final Map<String, String> _aiAnswers = {};
+  final Map<String, bool>   _aiLoading = {};
 
-  // 설정
-  double _fontSize    = 17;
-  double _lineHeight  = 1.85;
+  double _fontSize   = 17;
+  double _lineHeight = 1.85;
 
   @override
   void initState() {
     super.initState();
-    _loadContent();
+    _currentChapter = widget.chapterNumber;
+    _loadChapter();
   }
 
-  Future<void> _loadContent() async {
+  Future<void> _loadChapter() async {
+    setState(() {
+      _isLoading       = true;
+      _error           = null;
+      _selectedVerseId = null;
+      _selectedText    = null;
+    });
     try {
-      final verses = await BibleApiService.getVerses(
-        BibleApiService.bibleIdKo,
-        widget.chapter.id,
-      );
-      // 절마다 본문 병렬 로드
-      final contents = await Future.wait(
-        verses.map((v) => BibleApiService.getVerseContent(
-            BibleApiService.bibleIdKo, v.id)),
+      final chapter = await BibleApiService.getChapter(
+        bookNumber: widget.book.number,
+        chapter:    _currentChapter,
       );
       setState(() {
-        _verses   = verses;
-        _contents = {
-          for (var i = 0; i < verses.length; i++)
-            verses[i].id: contents[i],
-        };
+        _chapter   = chapter;
         _isLoading = false;
       });
     } catch (e) {
@@ -71,18 +63,24 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
     }
   }
 
+  Future<void> _goToChapter(int chapter) async {
+    if (chapter < 1 || chapter > widget.book.totalChapters) return;
+    setState(() => _currentChapter = chapter);
+    await _loadChapter();
+  }
+
   Future<void> _askAI(String verseId, String text) async {
     setState(() => _aiLoading[verseId] = true);
     try {
       final answer = await AiService.askVerse(text);
       setState(() {
-        _aiAnswers[verseId]  = answer;
-        _aiLoading[verseId]  = false;
+        _aiAnswers[verseId] = answer;
+        _aiLoading[verseId] = false;
       });
     } catch (e) {
       setState(() {
-        _aiAnswers[verseId]  = '답변을 불러오지 못했어요. 다시 시도해주세요.';
-        _aiLoading[verseId]  = false;
+        _aiAnswers[verseId] = '답변을 불러오지 못했어요. 다시 시도해주세요.';
+        _aiLoading[verseId] = false;
       });
     }
   }
@@ -90,7 +88,6 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
   void _onVerseTap(String verseId, String text) {
     setState(() {
       if (_selectedVerseId == verseId) {
-        // 같은 절 다시 탭 → 선택 해제
         _selectedVerseId = null;
         _selectedText    = null;
       } else {
@@ -109,33 +106,40 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
         child: Column(
           children: [
             _TopBar(
-              book:      widget.book,
-              chapter:   widget.chapter,
-              fontSize:  _fontSize,
-              onFontChanged: (v) => setState(() => _fontSize = v),
-              lineHeight: _lineHeight,
+              book:           widget.book,
+              chapterNumber:  _currentChapter,
+              fontSize:       _fontSize,
+              lineHeight:     _lineHeight,
+              onFontChanged:       (v) => setState(() => _fontSize = v),
               onLineHeightChanged: (v) => setState(() => _lineHeight = v),
             ),
             Expanded(
               child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: cs.primary))
+                  ? Center(
+                  child: CircularProgressIndicator(color: cs.primary))
                   : _error != null
-                  ? _ErrorView(error: _error!, onRetry: _loadContent)
+                  ? _ErrorView(
+                error:   _error!,
+                onRetry: _loadChapter,
+              )
+                  : _chapter == null
+                  ? const SizedBox()
                   : _VerseList(
-                verses:           _verses,
-                contents:         _contents,
-                selectedVerseId:  _selectedVerseId,
-                aiAnswers:        _aiAnswers,
-                aiLoading:        _aiLoading,
-                fontSize:         _fontSize,
-                lineHeight:       _lineHeight,
-                onVerseTap:       _onVerseTap,
-                onAskAI:          _askAI,
+                verses:          _chapter!.verses,
+                selectedVerseId: _selectedVerseId,
+                aiAnswers:       _aiAnswers,
+                aiLoading:       _aiLoading,
+                fontSize:        _fontSize,
+                lineHeight:      _lineHeight,
+                onVerseTap:      _onVerseTap,
+                onAskAI:         _askAI,
               ),
             ),
             _BottomChapterNav(
-              chapter:   widget.chapter,
-              book:      widget.book,
+              currentChapter: _currentChapter,
+              totalChapters:  widget.book.totalChapters,
+              onPrev: () => _goToChapter(_currentChapter - 1),
+              onNext: () => _goToChapter(_currentChapter + 1),
             ),
           ],
         ),
@@ -146,16 +150,16 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
 
 // ── 상단 바 ──────────────────────────────────────────
 class _TopBar extends StatelessWidget {
-  final BibleBookModel    book;
-  final BibleChapterModel chapter;
-  final double fontSize;
-  final double lineHeight;
+  final BibleBookModel book;
+  final int            chapterNumber;
+  final double         fontSize;
+  final double         lineHeight;
   final ValueChanged<double> onFontChanged;
   final ValueChanged<double> onLineHeightChanged;
 
   const _TopBar({
     required this.book,
-    required this.chapter,
+    required this.chapterNumber,
     required this.fontSize,
     required this.lineHeight,
     required this.onFontChanged,
@@ -171,7 +175,7 @@ class _TopBar extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
+        builder: (context, setSheet) => Padding(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -213,7 +217,7 @@ class _TopBar extends StatelessWidget {
                 activeColor: cs.primary,
                 inactiveColor: cs.surfaceContainerHighest,
                 onChanged: (v) {
-                  setSheetState(() {});
+                  setSheet(() {});
                   onFontChanged(v);
                 },
               ),
@@ -239,7 +243,7 @@ class _TopBar extends StatelessWidget {
                 activeColor: cs.primary,
                 inactiveColor: cs.surfaceContainerHighest,
                 onChanged: (v) {
-                  setSheetState(() {});
+                  setSheet(() {});
                   onLineHeightChanged(v);
                 },
               ),
@@ -267,7 +271,7 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${book.name} ${chapter.number}장',
+                  '${book.name} $chapterNumber장',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
@@ -275,13 +279,12 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  book.nameLong,
+                  book.englishName,
                   style: TextStyle(fontSize: 11, color: cs.secondary),
                 ),
               ],
             ),
           ),
-          // 즐겨찾기
           GestureDetector(
             onTap: () {},
             child: Container(
@@ -294,7 +297,6 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // 설정
           GestureDetector(
             onTap: () => _showSettingsSheet(context),
             child: Container(
@@ -303,7 +305,8 @@ class _TopBar extends StatelessWidget {
                 color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.text_fields_outlined, size: 18, color: cs.primary),
+              child: Icon(Icons.text_fields_outlined,
+                  size: 18, color: cs.primary),
             ),
           ),
         ],
@@ -314,19 +317,17 @@ class _TopBar extends StatelessWidget {
 
 // ── 절 목록 ──────────────────────────────────────────
 class _VerseList extends StatelessWidget {
-  final List<BibleVerseModel>  verses;
-  final Map<String, String>    contents;
-  final String?                selectedVerseId;
-  final Map<String, String>    aiAnswers;
-  final Map<String, bool>      aiLoading;
-  final double                 fontSize;
-  final double                 lineHeight;
+  final List<BibleVerseModel>    verses;
+  final String?                  selectedVerseId;
+  final Map<String, String>      aiAnswers;
+  final Map<String, bool>        aiLoading;
+  final double                   fontSize;
+  final double                   lineHeight;
   final Function(String, String) onVerseTap;
   final Function(String, String) onAskAI;
 
   const _VerseList({
     required this.verses,
-    required this.contents,
     required this.selectedVerseId,
     required this.aiAnswers,
     required this.aiLoading,
@@ -343,41 +344,32 @@ class _VerseList extends StatelessWidget {
       itemCount: verses.length + 1,
       itemBuilder: (context, index) {
         if (index == verses.length) return const SizedBox(height: 40);
-        final verse      = verses[index];
-        final text       = contents[verse.id] ?? '';
-        final isSelected = selectedVerseId == verse.id;
-        final aiAnswer   = aiAnswers[verse.id];
-        final isAiLoading = aiLoading[verse.id] ?? false;
 
-        // 절 번호 파싱 (예: JHN.3.16 → 16)
-        final verseNum = verse.id.split('.').last;
+        final verse       = verses[index];
+        final verseId     = '${verse.verse}';
+        final isSelected  = selectedVerseId == verseId;
+        final aiAnswer    = aiAnswers[verseId];
+        final isAiLoading = aiLoading[verseId] ?? false;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 절 본문
             _VerseRow(
-              verseNum:   verseNum,
-              text:       text,
+              verseNum:   '${verse.verse}',
+              text:       verse.text,
               isSelected: isSelected,
               fontSize:   fontSize,
               lineHeight: lineHeight,
-              onTap:      () => onVerseTap(verse.id, text),
+              onTap:      () => onVerseTap(verseId, verse.text),
             ),
-
-            // 선택됐을 때 액션 버튼
             if (isSelected)
               _ActionBar(
-                verseId:  verse.id,
-                text:     text,
-                onAskAI:  onAskAI,
+                verseId: verseId,
+                text:    verse.text,
+                onAskAI: onAskAI,
               ),
-
-            // AI 로딩
             if (isAiLoading)
               _AiLoadingBubble(),
-
-            // AI 답변
             if (aiAnswer != null && !isAiLoading)
               _AiBubble(answer: aiAnswer),
           ],
@@ -389,11 +381,11 @@ class _VerseList extends StatelessWidget {
 
 // ── 절 행 ──────────────────────────────────────────
 class _VerseRow extends StatelessWidget {
-  final String verseNum;
-  final String text;
-  final bool   isSelected;
-  final double fontSize;
-  final double lineHeight;
+  final String   verseNum;
+  final String   text;
+  final bool     isSelected;
+  final double   fontSize;
+  final double   lineHeight;
   final VoidCallback onTap;
 
   const _VerseRow({
@@ -423,7 +415,6 @@ class _VerseRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 절 번호
             SizedBox(
               width: 28,
               child: Text(
@@ -436,7 +427,6 @@ class _VerseRow extends StatelessWidget {
                 ),
               ),
             ),
-            // 본문
             Expanded(
               child: Text(
                 text,
@@ -455,10 +445,10 @@ class _VerseRow extends StatelessWidget {
   }
 }
 
-// ── 액션 바 (복사 / 하이라이트 / AI 질문) ───────────────
+// ── 액션 바 ──────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
-  final String verseId;
-  final String text;
+  final String               verseId;
+  final String               text;
   final Function(String, String) onAskAI;
 
   const _ActionBar({
@@ -469,7 +459,6 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(left: 38, bottom: 8),
       child: Row(
@@ -482,7 +471,7 @@ class _ActionBar extends StatelessWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: const Text('클립보드에 복사됐어요'),
-                  backgroundColor: cs.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   duration: const Duration(seconds: 1),
                 ),
               );
@@ -575,9 +564,7 @@ class _AiLoadingBubble extends StatelessWidget {
           SizedBox(
             width: 14, height: 14,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: cs.primary,
-            ),
+                strokeWidth: 2, color: cs.primary),
           ),
           const SizedBox(width: 8),
           Text('AI가 해석 중이에요...',
@@ -615,27 +602,20 @@ class _AiBubble extends StatelessWidget {
             children: [
               Icon(Icons.auto_awesome, size: 13, color: cs.primary),
               const SizedBox(width: 4),
-              Text(
-                'AI 해석',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                ),
-              ),
+              Text('AI 해석',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: cs.primary)),
             ],
           ),
           const SizedBox(height: 8),
           Text(
             answer,
             style: TextStyle(
-              fontSize: 13,
-              color: cs.onSurface,
-              height: 1.65,
-            ),
+                fontSize: 13, color: cs.onSurface, height: 1.65),
           ),
           const SizedBox(height: 10),
-          // 추가 질문 버튼
           Row(
             children: [
               _MoreBtn(label: '더 자세히', onTap: () {}),
@@ -652,7 +632,7 @@ class _AiBubble extends StatelessWidget {
 }
 
 class _MoreBtn extends StatelessWidget {
-  final String label;
+  final String       label;
   final VoidCallback onTap;
   const _MoreBtn({required this.label, required this.onTap});
 
@@ -668,10 +648,8 @@ class _MoreBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: cs.outline, width: 0.5),
         ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 11, color: cs.primary),
-        ),
+        child: Text(label,
+            style: TextStyle(fontSize: 11, color: cs.primary)),
       ),
     );
   }
@@ -679,17 +657,24 @@ class _MoreBtn extends StatelessWidget {
 
 // ── 하단 장 이동 ──────────────────────────────────────
 class _BottomChapterNav extends StatelessWidget {
-  final BibleChapterModel chapter;
-  final BibleBookModel    book;
+  final int          currentChapter;
+  final int          totalChapters;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
 
   const _BottomChapterNav({
-    required this.chapter,
-    required this.book,
+    required this.currentChapter,
+    required this.totalChapters,
+    required this.onPrev,
+    required this.onNext,
   });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs        = Theme.of(context).colorScheme;
+    final hasPrev   = currentChapter > 1;
+    final hasNext   = currentChapter < totalChapters;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -700,28 +685,29 @@ class _BottomChapterNav extends StatelessWidget {
           // 이전 장
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                final num = int.tryParse(chapter.number) ?? 1;
-                if (num > 1) Navigator.pop(context);
-              },
+              onTap: hasPrev ? onPrev : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
+                  color: hasPrev
+                      ? cs.surfaceContainerHighest
+                      : cs.surfaceContainerHighest.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.arrow_back_ios,
-                        size: 14, color: cs.primary),
+                        size: 14,
+                        color: hasPrev ? cs.primary : cs.outline),
                     const SizedBox(width: 4),
                     Text(
-                      '이전 장',
+                      '${currentChapter - 1}장',
                       style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: cs.primary),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: hasPrev ? cs.primary : cs.outline,
+                      ),
                     ),
                   ],
                 ),
@@ -729,15 +715,17 @@ class _BottomChapterNav extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          // 현재 장 표시
+
+          // 현재 장
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: cs.primary,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              '${chapter.number}장',
+              '$currentChapter장',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -746,29 +734,34 @@ class _BottomChapterNav extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
+
           // 다음 장
           Expanded(
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: hasNext ? onNext : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
+                  color: hasNext
+                      ? cs.surfaceContainerHighest
+                      : cs.surfaceContainerHighest.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '다음 장',
+                      '${currentChapter + 1}장',
                       style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: cs.primary),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: hasNext ? cs.primary : cs.outline,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     Icon(Icons.arrow_forward_ios,
-                        size: 14, color: cs.primary),
+                        size: 14,
+                        color: hasNext ? cs.primary : cs.outline),
                   ],
                 ),
               ),
@@ -780,11 +773,12 @@ class _BottomChapterNav extends StatelessWidget {
   }
 }
 
-// ── 에러 뷰 ──────────────────────────────────────────
+// ── 에러 화면 ──────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
-  final String       error;
+  final String error;
   final VoidCallback onRetry;
   const _ErrorView({required this.error, required this.onRetry});
+
 
   @override
   Widget build(BuildContext context) {
@@ -799,7 +793,8 @@ class _ErrorView extends StatelessWidget {
               style: TextStyle(fontSize: 15, color: cs.onSurface)),
           const SizedBox(height: 6),
           Text(error,
-              style: TextStyle(fontSize: 12, color: cs.secondary)),
+              style: TextStyle(fontSize: 12, color: cs.secondary),
+              textAlign: TextAlign.center),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: onRetry,

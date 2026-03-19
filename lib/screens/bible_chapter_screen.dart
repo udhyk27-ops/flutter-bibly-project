@@ -2,43 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/bible_api_service.dart';
 import 'bible_reading_screen.dart';
 
-/// 장 그리드 + API
-class BibleChapterScreen extends StatefulWidget {
+class BibleChapterScreen extends StatelessWidget {
   final BibleBookModel book;
   const BibleChapterScreen({super.key, required this.book});
-
-  @override
-  State<BibleChapterScreen> createState() => _BibleChapterScreenState();
-}
-
-class _BibleChapterScreenState extends State<BibleChapterScreen> {
-  List<BibleChapterModel> _chapters = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadChapters();
-  }
-
-  Future<void> _loadChapters() async {
-    try {
-      final chapters = await BibleApiService.getChapters(
-        BibleApiService.bibleIdKo,
-        widget.book.id,
-      );
-      setState(() {
-        _chapters  = chapters;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error     = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +22,15 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Icon(Icons.arrow_back_ios, size: 18, color: cs.primary),
+                    child: Icon(Icons.arrow_back_ios,
+                        size: 18, color: cs.primary),
                   ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.book.name,
+                        book.name,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -71,7 +38,7 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                         ),
                       ),
                       Text(
-                        widget.book.nameLong,
+                        '${book.englishName} · 총 ${book.totalChapters}장',
                         style: TextStyle(fontSize: 11, color: cs.secondary),
                       ),
                     ],
@@ -81,7 +48,7 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
             ),
 
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
               child: Text(
                 '장 선택',
                 style: TextStyle(
@@ -92,16 +59,9 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
 
             Expanded(
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: cs.primary))
-                  : _error != null
-                  ? Center(
-                  child: Text(_error!,
-                      style: TextStyle(color: cs.secondary)))
-                  : GridView.builder(
+              child: GridView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
@@ -110,16 +70,16 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                   crossAxisSpacing: 10,
                   childAspectRatio: 1,
                 ),
-                itemCount: _chapters.length,
+                itemCount: book.totalChapters,
                 itemBuilder: (context, index) {
-                  final chapter = _chapters[index];
+                  final chapterNum = index + 1;
                   return GestureDetector(
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => BibleReadingScreen(
-                          book:    widget.book,
-                          chapter: chapter,
+                          book:          book,
+                          chapterNumber: chapterNum,
                         ),
                       ),
                     ),
@@ -130,7 +90,7 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        chapter.number,
+                        '$chapterNum',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w500,

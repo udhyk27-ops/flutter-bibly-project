@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/bible_api_service.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BibleApiService.init(); // Hive 초기화
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),

@@ -66,24 +66,13 @@ class _BibleScreenState extends State<BibleScreen>
     super.dispose();
   }
 
-  Future<void> _loadBooks() async {
+  void _loadBooks() {
+    final books = BibleApiService.getBooks();
     setState(() {
-      _isLoading = true;
-      _error     = null;
+      _oldBooks = books.where((b) => _oldTestamentIds.contains(b.id)).toList();
+      _newBooks = books.where((b) => !_oldTestamentIds.contains(b.id)).toList();
+      _isLoading = false;
     });
-    try {
-      final books = await BibleApiService.getBooks(BibleApiService.bibleIdKo);
-      setState(() {
-        _oldBooks  = books.where((b) => _oldTestamentIds.contains(b.id)).toList();
-        _newBooks  = books.where((b) => !_oldTestamentIds.contains(b.id)).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error     = e.toString();
-        _isLoading = false;
-      });
-    }
   }
 
   List<BibleBookModel> get _currentBooks =>
@@ -426,23 +415,21 @@ class _BookRow extends StatelessWidget {
             ),
 
             // 장 수 배지
-            if (book.chapters != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '${book.chapters}장',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: cs.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${book.totalChapters}장',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: cs.primary,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
+            ),
             const SizedBox(width: 6),
             Icon(Icons.chevron_right, size: 16, color: cs.outline),
           ],
