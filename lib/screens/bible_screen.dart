@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_router.dart';
 import '../services/bible_api_service.dart';
 import '../widgets/bottom_nav.dart';
 import 'bible_chapter_screen.dart';
@@ -360,9 +361,7 @@ class _BookRow extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => BibleChapterScreen(book: book),
-        ),
+        AppRouter.slide(page: BibleChapterScreen(book: book)),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),

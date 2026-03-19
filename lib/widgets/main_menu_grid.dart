@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_router.dart';
 import '../screens/bible_screen.dart';
 import '../screens/hymn_screen.dart';
 
@@ -20,7 +21,7 @@ class MainMenuGrid extends StatelessWidget {
         subColor: cs.secondary,
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const BibleScreen()),
+          AppRouter.slide(page: BibleScreen())
         ),
       ),
       _MenuItem(
@@ -33,7 +34,7 @@ class MainMenuGrid extends StatelessWidget {
         subColor: cs.secondary,
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const HymnScreen()),
+          AppRouter.slide(page: HymnScreen())
         ),
       ),
       _MenuItem(

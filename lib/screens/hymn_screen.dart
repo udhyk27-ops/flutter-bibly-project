@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_router.dart';
 import '../widgets/bottom_nav.dart';
 
 class HymnScreen extends StatefulWidget {
@@ -235,9 +236,7 @@ class _HymnRowState extends State<_HymnRow> {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => HymnDetailScreen(hymn: widget.hymn),
-        ),
+        AppRouter.slide(page: HymnDetailScreen(hymn: widget.hymn)),
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),

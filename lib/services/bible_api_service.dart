@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
 
 class BibleApiService {
-  static const String _baseUrl    = 'https://getbible.net/v2';
+  static const String _baseUrl = 'https://api.getbible.net/v2';
   static const String _boxName    = 'bible_cache';
 
   static const String bibleIdKo   = 'korean';
@@ -132,13 +132,25 @@ class BibleChapterModel {
   });
 
   factory BibleChapterModel.fromJson(Map<String, dynamic> json) {
-    final versesMap = json['verses'] as Map<String, dynamic>;
-    final verses = versesMap.entries.map((e) {
-      return BibleVerseModel.fromJson(
-        Map<String, dynamic>.from(e.value),
-      );
-    }).toList()
-      ..sort((a, b) => a.verse.compareTo(b.verse));
+    final versesRaw = json['verses'];
+
+    List<BibleVerseModel> verses;
+
+    if (versesRaw is List) {
+      // List 형태로 올 때
+      verses = versesRaw
+          .map((v) => BibleVerseModel.fromJson(Map<String, dynamic>.from(v)))
+          .toList()
+        ..sort((a, b) => a.verse.compareTo(b.verse));
+    } else if (versesRaw is Map) {
+      // Map 형태로 올 때
+      verses = (versesRaw as Map<String, dynamic>).entries.map((e) {
+        return BibleVerseModel.fromJson(Map<String, dynamic>.from(e.value));
+      }).toList()
+        ..sort((a, b) => a.verse.compareTo(b.verse));
+    } else {
+      verses = [];
+    }
 
     return BibleChapterModel(
       book:        json['book']        ?? 0,
@@ -152,10 +164,7 @@ class BibleChapterModel {
     'book':        book,
     'chapter':     chapter,
     'translation': translation,
-    'verses': {
-      for (final v in verses)
-        '${v.verse}': v.toJson(),
-    },
+    'verses':      verses.map((v) => v.toJson()).toList(),
   };
 }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_router.dart';
 import '../screens/bible_screen.dart';
 import '../screens/hymn_screen.dart';
 import '../screens/settings_screen.dart';
@@ -7,10 +8,33 @@ class BottomNav extends StatelessWidget {
   final int activeIndex;
   const BottomNav({super.key, this.activeIndex = 0});
 
+  void _onTap(BuildContext context, int index) {
+    if (index == activeIndex) return;
+
+    if (index == 0) {
+      Navigator.popUntil(context, (r) => r.isFirst);
+      return;
+    }
+
+    Widget screen;
+    switch (index) {
+      case 1: screen = const BibleScreen();    break;
+      case 2: screen = const HymnScreen();     break;
+      case 3: screen = const SettingsScreen(); break;
+      default: return;
+    }
+
+    // 탭 이동은 페이드
+    Navigator.pushAndRemoveUntil(
+      context,
+      AppRouter.fade(page: screen),
+          (route) => route.isFirst,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
+    final cs    = Theme.of(context).colorScheme;
     final items = [
       _NavItem(icon: Icons.home_outlined,       label: '홈'),
       _NavItem(icon: Icons.menu_book_outlined,  label: '성경'),
@@ -30,40 +54,29 @@ class BottomNav extends StatelessWidget {
           final isActive = i == activeIndex;
           final color    = isActive ? cs.primary : cs.outline;
           return GestureDetector(
-            onTap: () {
-              if (isActive) return;
-              switch (i) {
-                case 0:
-                  Navigator.popUntil(context, (r) => r.isFirst);
-                case 1:
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const BibleScreen()));
-                case 2:
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const HymnScreen()));
-                case 3:
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              }
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(items[i].icon, color: color, size: 22),
-                const SizedBox(height: 3),
-                Text(items[i].label,
-                    style: TextStyle(fontSize: 10, color: color)),
-                if (isActive) ...[
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _onTap(context, i),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(items[i].icon, color: color, size: 22),
                   const SizedBox(height: 3),
-                  Container(
-                    width: 4, height: 4,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
+                  Text(items[i].label,
+                      style: TextStyle(fontSize: 10, color: color)),
+                  if (isActive) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      width: 4, height: 4,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           );
         }),
