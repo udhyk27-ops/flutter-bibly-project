@@ -15,7 +15,6 @@ class _HymnScreenState extends State<HymnScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
 
     final filtered = _hymnList.where((h) {
       final matchCat    = _selectedCategory == '전체' || h.category == _selectedCategory;
@@ -72,6 +71,7 @@ class _HymnScreenState extends State<HymnScreen> {
 class _HymnTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -81,18 +81,8 @@ class _HymnTopBar extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '찬송가',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                ),
-              ),
-              Text(
-                '${_hymnList.length}장 수록',
-                style: TextStyle(fontSize: 11, color: cs.secondary),
-              ),
+              Text('찬송가', style: tt.headlineSmall),
+              Text('${_hymnList.length}장 수록', style: tt.labelMedium),
             ],
           ),
           Container(
@@ -232,6 +222,7 @@ class _HymnRowState extends State<_HymnRow> {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -271,20 +262,8 @@ class _HymnRowState extends State<_HymnRow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.hymn.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    widget.hymn.englishTitle,
-                    style: TextStyle(fontSize: 11, color: cs.secondary),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(widget.hymn.title, style: tt.bodyMedium),
+                  Text(widget.hymn.englishTitle, style: tt.labelMedium),
                 ],
               ),
             ),
@@ -368,6 +347,7 @@ class _HymnDetailScreenState extends State<HymnDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -388,18 +368,9 @@ class _HymnDetailScreenState extends State<HymnDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          widget.hymn.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: cs.primary,
-                          ),
-                        ),
-                        Text(
-                          '${widget.hymn.number}장 · ${widget.hymn.category}',
-                          style: TextStyle(fontSize: 11, color: cs.secondary),
-                        ),
+                        Text(widget.hymn.title, style: tt.titleLarge),
+                        Text('${widget.hymn.number}장 · ${widget.hymn.category}',
+                            style: tt.labelMedium),
                       ],
                     ),
                   ),
@@ -454,16 +425,9 @@ class _HymnDetailScreenState extends State<HymnDetailScreen> {
                               : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          '${i + 1}절',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            color: isSelected ? cs.onPrimary : cs.secondary,
-                          ),
-                        ),
+                        child: Text('${i + 1}절', style: isSelected
+                            ? tt.labelLarge?.copyWith(color: cs.onPrimary)
+                            : tt.labelMedium),
                       ),
                     );
                   },
@@ -480,16 +444,12 @@ class _HymnDetailScreenState extends State<HymnDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // 현재 절 가사
-                    Text(
-                      widget.hymn.verses[_currentVerse],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: _fontSize,
-                        color: cs.onSurface,
-                        height: 2.0,
-                        fontFamily: 'Georgia',
-                      ),
-                    ),
+                    Text(widget.hymn.verses[_currentVerse], style: TextStyle(
+                      fontSize: _fontSize,   // 슬라이더 유지
+                      color: cs.onSurface,
+                      height: 2.0,
+                      fontFamily: 'Georgia',
+                    )),
 
                     // 후렴 (있을 경우)
                     if (widget.hymn.chorus != null) ...[
@@ -503,15 +463,7 @@ class _HymnDetailScreenState extends State<HymnDetailScreen> {
                         ),
                         child: Column(
                           children: [
-                            Text(
-                              '후렴',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: cs.primary,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
+                            Text('후렴', style: tt.labelLarge?.copyWith(letterSpacing: 0.3)),
                             const SizedBox(height: 10),
                             Text(
                               widget.hymn.chorus!,

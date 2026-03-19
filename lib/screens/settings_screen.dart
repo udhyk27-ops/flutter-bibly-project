@@ -78,18 +78,10 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 8),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: cs.primary,
-          letterSpacing: 0.3,
-        ),
-      ),
+      child: Text(label, style: tt.labelLarge?.copyWith(letterSpacing: 0.3)),
     );
   }
 }
@@ -131,6 +123,7 @@ class _SettingsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -156,16 +149,10 @@ class _SettingsRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 14, color: cs.onSurface),
-                  ),
+                  Text(label, style: tt.bodyMedium),
                   if (subLabel != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      subLabel!,
-                      style: TextStyle(fontSize: 11, color: cs.secondary),
-                    ),
+                    Text(subLabel!, style: tt.labelMedium),
                   ],
                 ],
               ),
@@ -243,7 +230,6 @@ class _ThemeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
-    final cs = Theme.of(context).colorScheme;
 
     return Column(
       children: [
@@ -294,6 +280,7 @@ class _ThemeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -327,18 +314,8 @@ class _ThemeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: cs.onSurface,
-                    ),
-                  ),
-                  Text(
-                    desc,
-                    style: TextStyle(fontSize: 11, color: cs.secondary),
-                  ),
+                  Text(label, style: tt.titleSmall),
+                  Text(desc,  style: tt.labelMedium),
                 ],
               ),
             ),
@@ -509,8 +486,10 @@ class _BibleSettingsState extends State<_BibleSettings> {
   String _language    = '한국어';
 
   void _showTranslationPicker(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     final translations = ['개역개정', '개역한글', '새번역', 'KJV', 'NIV', 'ESV'];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -555,9 +534,7 @@ class _BibleSettingsState extends State<_BibleSettings> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(t,
-                        style: TextStyle(
-                            fontSize: 14, color: cs.onSurface)),
+                    Text(t, style: tt.bodyMedium),
                     if (_translation == t)
                       Icon(Icons.check, size: 18, color: cs.primary),
                   ],
@@ -780,6 +757,7 @@ class _NotificationSettingsState extends State<_NotificationSettings> {
 class _AppInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
     return _SettingsCard(
@@ -794,10 +772,7 @@ class _AppInfo extends StatelessWidget {
               color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text(
-              '최신 버전',
-              style: TextStyle(fontSize: 11, color: cs.primary),
-            ),
+            child: Text('최신 버전', style: tt.labelSmall?.copyWith(color: cs.primary)),
           ),
         ),
         _SettingsRow(

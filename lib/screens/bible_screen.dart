@@ -92,6 +92,7 @@ class _BibleScreenState extends State<BibleScreen>
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -134,7 +135,7 @@ class _BibleScreenState extends State<BibleScreen>
 class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -143,18 +144,8 @@ class _TopBar extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '성경',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                ),
-              ),
-              Text(
-                '구약 39권 · 신약 27권',
-                style: TextStyle(fontSize: 11, color: cs.secondary),
-              ),
+              Text('성경', style: tt.headlineSmall),
+              Text('구약 39권 · 신약 27권', style: tt.labelMedium),
             ],
           ),
         ],
@@ -211,6 +202,7 @@ class _TabRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -230,9 +222,8 @@ class _TabRow extends StatelessWidget {
           dividerColor: Colors.transparent,
           labelColor: cs.primary,
           unselectedLabelColor: cs.secondary,
-          labelStyle: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600),
-          unselectedLabelStyle: const TextStyle(fontSize: 13),
+          labelStyle: tt.titleSmall,
+          unselectedLabelStyle: tt.bodySmall,
           tabs: const [
             Tab(text: '구약 (39권)'),
             Tab(text: '신약 (27권)'),
@@ -334,18 +325,10 @@ class _GenreHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 6),
-      child: Text(
-        genre,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: cs.primary,
-          letterSpacing: 0.3,
-        ),
-      ),
+      child: Text(genre, style: tt.labelLarge?.copyWith(letterSpacing: 0.3)),
     );
   }
 }
@@ -357,6 +340,7 @@ class _BookRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => Navigator.push(
@@ -398,17 +382,8 @@ class _BookRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    book.name,
-                    style: TextStyle(
-                        fontSize: 14, color: cs.onSurface),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    book.nameLong,
-                    style: TextStyle(
-                        fontSize: 11, color: cs.secondary),
-                  ),
+                  Text(book.name, style: tt.bodyMedium),
+                  Text(book.nameLong, style: tt.labelMedium),
                 ],
               ),
             ),
@@ -420,14 +395,7 @@ class _BookRow extends StatelessWidget {
                 color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Text(
-                '${book.totalChapters}장',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: cs.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              child: Text('${book.totalChapters}장', style: tt.labelMedium?.copyWith(color: cs.primary, fontWeight: FontWeight.w500)),
             ),
             const SizedBox(width: 6),
             Icon(Icons.chevron_right, size: 16, color: cs.outline),

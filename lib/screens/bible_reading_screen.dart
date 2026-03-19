@@ -256,6 +256,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -270,18 +271,8 @@ class _TopBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${book.name} $chapterNumber장',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: cs.primary,
-                  ),
-                ),
-                Text(
-                  book.englishName,
-                  style: TextStyle(fontSize: 11, color: cs.secondary),
-                ),
+                Text('${book.name} $chapterNumber장', style: tt.headlineSmall),
+                Text(book.englishName, style: tt.labelMedium),
               ],
             ),
           ),
@@ -399,6 +390,7 @@ class _VerseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -417,26 +409,21 @@ class _VerseRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 28,
-              child: Text(
-                verseNum,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                  height: lineHeight,
-                ),
-              ),
+              child: Text(verseNum, style: tt.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: cs.primary,
+                height: lineHeight,
+              )),
+
             ),
             Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: cs.onSurface,
-                  height: lineHeight,
-                  fontFamily: 'Georgia',
-                ),
-              ),
+              child: Text(text, style: TextStyle(
+                fontSize: fontSize,
+                color: cs.onSurface,
+                height: lineHeight,
+                fontFamily: 'Georgia',
+              )),
+
             ),
           ],
         ),
@@ -511,7 +498,9 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme; // 추가
+    final tt = Theme.of(context).textTheme;   // 추가
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -529,8 +518,7 @@ class _ActionChip extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 12,
+              style: tt.labelMedium?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: isPrimary ? cs.onPrimary : cs.secondary,
               ),
@@ -582,6 +570,7 @@ class _AiBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(left: 38, bottom: 16, right: 8),
@@ -602,11 +591,9 @@ class _AiBubble extends StatelessWidget {
             children: [
               Icon(Icons.auto_awesome, size: 13, color: cs.primary),
               const SizedBox(width: 4),
-              Text('AI 해석',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: cs.primary)),
+              Text('AI 해석', style: tt.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600, color: cs.primary)),
+              Text(answer, style: tt.bodySmall?.copyWith(height: 1.65)),
             ],
           ),
           const SizedBox(height: 8),
@@ -638,6 +625,7 @@ class _MoreBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -648,8 +636,10 @@ class _MoreBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: cs.outline, width: 0.5),
         ),
-        child: Text(label,
-            style: TextStyle(fontSize: 11, color: cs.primary)),
+        child: Text(label, style: tt.labelMedium?.copyWith(
+          fontWeight: FontWeight.w500,
+          color: cs.onPrimary,
+        )),
       ),
     );
   }

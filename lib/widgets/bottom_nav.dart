@@ -10,12 +10,10 @@ class BottomNav extends StatelessWidget {
 
   void _onTap(BuildContext context, int index) {
     if (index == activeIndex) return;
-
     if (index == 0) {
       Navigator.popUntil(context, (r) => r.isFirst);
       return;
     }
-
     Widget screen;
     switch (index) {
       case 1: screen = const BibleScreen();    break;
@@ -23,8 +21,6 @@ class BottomNav extends StatelessWidget {
       case 3: screen = const SettingsScreen(); break;
       default: return;
     }
-
-    // 탭 이동은 페이드
     Navigator.pushAndRemoveUntil(
       context,
       AppRouter.fade(page: screen),
@@ -34,7 +30,9 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs    = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     final items = [
       _NavItem(icon: Icons.home_outlined,       label: '홈'),
       _NavItem(icon: Icons.menu_book_outlined,  label: '성경'),
@@ -61,18 +59,18 @@ class BottomNav extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(items[i].icon, color: color, size: 22),
+                  Icon(items[i].icon, color: color, size: 24),
                   const SizedBox(height: 3),
-                  Text(items[i].label,
-                      style: TextStyle(fontSize: 10, color: color)),
+                  Text(
+                    items[i].label,
+                    style: tt.labelSmall?.copyWith(color: color),
+                  ),
                   if (isActive) ...[
                     const SizedBox(height: 3),
                     Container(
                       width: 4, height: 4,
                       decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                          color: color, shape: BoxShape.circle),
                     ),
                   ],
                 ],

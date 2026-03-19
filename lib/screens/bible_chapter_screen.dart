@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import '../core/app_router.dart';
 import '../services/bible_api_service.dart';
 import 'bible_reading_screen.dart';
@@ -31,6 +30,7 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -50,17 +50,10 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.book.name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: cs.primary,
-                        ),
-                      ),
+                      Text(widget.book.name, style: tt.headlineSmall),
                       Text(
                         '${widget.book.englishName} · 총 ${widget.book.totalChapters}장',
-                        style: TextStyle(fontSize: 11, color: cs.secondary),
+                        style: tt.labelMedium,
                       ),
                     ],
                   ),
@@ -73,17 +66,10 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
             // 선택된 장 표시
             Text(
               '${_selectedChapter}장',
-              style: TextStyle(
-                fontSize: 48,
-                fontWeight: FontWeight.w600,
-                color: cs.primary,
-              ),
+              style: tt.headlineLarge?.copyWith(fontSize: 52),
             ),
             const SizedBox(height: 4),
-            Text(
-              widget.book.name,
-              style: TextStyle(fontSize: 14, color: cs.secondary),
-            ),
+            Text(widget.book.name, style: tt.bodyMedium),
 
             const SizedBox(height: 32),
 
@@ -121,15 +107,10 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                         return Center(
                           child: AnimatedDefaultTextStyle(
                             duration: const Duration(milliseconds: 150),
-                            style: TextStyle(
-                              fontSize: isSelected ? 22 : 17,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                              color: isSelected
-                                  ? cs.primary
-                                  : cs.secondary.withOpacity(0.5),
-                            ),
+                            style: isSelected
+                                ? tt.titleLarge!.copyWith(fontSize: 22)
+                                : tt.bodyMedium!.copyWith(
+                                color: cs.secondary.withOpacity(0.5)),
                             child: Text('$chapter장'),
                           ),
                         );
@@ -148,10 +129,12 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  AppRouter.slide(page: BibleReadingScreen(
-                    book: widget.book,
-                    chapterNumber: _selectedChapter,
-                  )),
+                  AppRouter.slide(
+                    page: BibleReadingScreen(
+                      book:          widget.book,
+                      chapterNumber: _selectedChapter,
+                    ),
+                  ),
                 ),
                 child: Container(
                   width: double.infinity,
@@ -164,15 +147,11 @@ class _BibleChapterScreenState extends State<BibleChapterScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.menu_book_outlined,
-                          size: 18, color: cs.onPrimary),
+                          size: 20, color: cs.onPrimary),
                       const SizedBox(width: 8),
                       Text(
                         '${_selectedChapter}장 읽기',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: cs.onPrimary,
-                        ),
+                        style: tt.titleMedium?.copyWith(color: cs.onPrimary),
                       ),
                     ],
                   ),

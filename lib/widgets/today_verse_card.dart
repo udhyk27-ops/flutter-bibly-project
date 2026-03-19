@@ -20,7 +20,7 @@ class TodayVerseCard extends StatelessWidget {
           Text(
             '오늘의 말씀',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               color: cs.onPrimary.withOpacity(0.7),
               letterSpacing: 0.5,
             ),
@@ -29,7 +29,7 @@ class TodayVerseCard extends StatelessWidget {
           Text(
             '"너는 마음을 다하여 여호와를 신뢰하고\n네 명철을 의지하지 말라."',
             style: TextStyle(
-              fontSize: 15,
+              fontSize: 16,
               color: cs.onPrimary,
               height: 1.7,
               fontFamily: 'Georgia',
@@ -39,7 +39,7 @@ class TodayVerseCard extends StatelessWidget {
           Text(
             '잠언 3:5',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               color: cs.onPrimary.withOpacity(0.7),
             ),
           ),

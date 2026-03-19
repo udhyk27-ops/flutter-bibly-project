@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../core/app_router.dart';
 import '../screens/bible_screen.dart';
 import '../screens/hymn_screen.dart';
+import '../core/app_router.dart';
 
 class MainMenuGrid extends StatelessWidget {
   const MainMenuGrid({super.key});
@@ -9,6 +9,7 @@ class MainMenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
     final items = [
       _MenuItem(
@@ -17,12 +18,10 @@ class MainMenuGrid extends StatelessWidget {
         sub: '66권 · 구약/신약',
         bgColor: cs.surfaceContainerHighest,
         iconColor: cs.primary,
-        labelColor: cs.onSurface,
-        subColor: cs.secondary,
+        labelStyle: tt.titleSmall!,
+        subStyle: tt.labelMedium!,
         onTap: () => Navigator.push(
-          context,
-          AppRouter.slide(page: BibleScreen())
-        ),
+            context, AppRouter.slide(page: const BibleScreen())),
       ),
       _MenuItem(
         icon: Icons.music_note_outlined,
@@ -30,12 +29,10 @@ class MainMenuGrid extends StatelessWidget {
         sub: '645장 수록',
         bgColor: cs.surfaceContainerHighest,
         iconColor: cs.primary,
-        labelColor: cs.onSurface,
-        subColor: cs.secondary,
+        labelStyle: tt.titleSmall!,
+        subStyle: tt.labelMedium!,
         onTap: () => Navigator.push(
-          context,
-          AppRouter.slide(page: HymnScreen())
-        ),
+            context, AppRouter.slide(page: const HymnScreen())),
       ),
       _MenuItem(
         icon: Icons.star_outline,
@@ -43,8 +40,8 @@ class MainMenuGrid extends StatelessWidget {
         sub: '저장한 구절',
         bgColor: cs.surfaceContainerHighest,
         iconColor: cs.primary,
-        labelColor: cs.onSurface,
-        subColor: cs.secondary,
+        labelStyle: tt.titleSmall!,
+        subStyle: tt.labelMedium!,
         onTap: () {},
       ),
       _MenuItem(
@@ -52,9 +49,10 @@ class MainMenuGrid extends StatelessWidget {
         label: 'AI 질문',
         sub: '말씀 해석·묵상',
         bgColor: cs.primary,
-        iconColor: cs.onPrimary.withOpacity(0.8),
-        labelColor: cs.onPrimary,
-        subColor: cs.onPrimary.withOpacity(0.6),
+        iconColor: cs.onPrimary,
+        labelStyle: tt.titleSmall!.copyWith(color: cs.onPrimary),
+        subStyle: tt.labelMedium!.copyWith(
+            color: cs.onPrimary.withOpacity(0.7)),
         onTap: () {},
       ),
     ];
@@ -72,13 +70,13 @@ class MainMenuGrid extends StatelessWidget {
 }
 
 class _MenuItem {
-  final IconData icon;
-  final String label;
-  final String sub;
-  final Color bgColor;
-  final Color iconColor;
-  final Color labelColor;
-  final Color subColor;
+  final IconData   icon;
+  final String     label;
+  final String     sub;
+  final Color      bgColor;
+  final Color      iconColor;
+  final TextStyle  labelStyle;
+  final TextStyle  subStyle;
   final VoidCallback onTap;
 
   const _MenuItem({
@@ -87,8 +85,8 @@ class _MenuItem {
     required this.sub,
     required this.bgColor,
     required this.iconColor,
-    required this.labelColor,
-    required this.subColor,
+    required this.labelStyle,
+    required this.subStyle,
     required this.onTap,
   });
 }
@@ -111,24 +109,11 @@ class _MenuCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, color: item.iconColor, size: 22),
+            Icon(item.icon, color: item.iconColor, size: 24),
             const SizedBox(height: 8),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: item.labelColor,
-              ),
-            ),
+            Text(item.label, style: item.labelStyle),
             const SizedBox(height: 2),
-            Text(
-              item.sub,
-              style: TextStyle(
-                fontSize: 11,
-                color: item.subColor,
-              ),
-            ),
+            Text(item.sub, style: item.subStyle),
           ],
         ),
       ),
