@@ -256,6 +256,20 @@ class _ThemeSelector extends StatelessWidget {
           isSelected: themeProvider.themeType == AppThemeType.parchment,
           onTap: () => themeProvider.setTheme(AppThemeType.parchment),
         ),
+        const SizedBox(height: 8),
+        _ThemeCard(
+          label: '소프트 다크',
+          desc: '눈이 편한 짙은 회색 다크 모드',
+          colors: const [
+            Color(0xFFA8C5A0), // primary
+            Color(0xFF313131), // surfaceHigh
+            Color(0xFF8A9E86), // secondary
+            Color(0xFF1E1E1E), // background
+          ],
+          isSelected: themeProvider.themeType == AppThemeType.softDark,
+          onTap: () => themeProvider.setTheme(AppThemeType.softDark),
+        ),
+
       ],
     );
   }

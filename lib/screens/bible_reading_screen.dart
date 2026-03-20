@@ -486,30 +486,35 @@ class _VerseList extends StatelessWidget {
         final highlightColor =
         showHighlight ? highlights[verseId] : null;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _VerseRow(
-              verseNum:       verseId,
-              text:           verse.text,
-              isSelected:     isSelected,
-              highlightColor: highlightColor,
-              fontSize:       fontSize,
-              lineHeight:     lineHeight,
-              showVerseNum:   showVerseNum,
-              onTap:          () => onVerseTap(verseId),
-            ),
-            if (isSelected)
-              _ActionBar(
-                verseId:     verseId,
-                text:        verse.text,
-                isHighlighted: highlights.containsKey(verseId),
-                onHighlight: () => onHighlight(verseId),
-                onAskAI:     onAskAI,
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _VerseRow(
+                verseNum:       verseId,
+                text:           verse.text,
+                isSelected:     isSelected,
+                highlightColor: highlightColor,
+                fontSize:       fontSize,
+                lineHeight:     lineHeight,
+                showVerseNum:   showVerseNum,
+                onTap:          () => onVerseTap(verseId),
               ),
-            if (isAiLoading) const _AiLoadingBubble(),
-            if (aiAnswer != null && !isAiLoading) _AiBubble(answer: aiAnswer),
-          ],
+              if (isSelected)
+                _ActionBar(
+                  verseId:     verseId,
+                  text:        verse.text,
+                  isHighlighted: highlights.containsKey(verseId),
+                  onHighlight: () => onHighlight(verseId),
+                  onAskAI:     onAskAI,
+                ),
+              if (isAiLoading) const _AiLoadingBubble(),
+              if (aiAnswer != null && !isAiLoading) _AiBubble(answer: aiAnswer),
+            ],
+          ),
         );
       },
     );
@@ -546,7 +551,7 @@ class _VerseRow extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: const Duration(milliseconds: 0),
         margin: const EdgeInsets.only(bottom: 2),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
