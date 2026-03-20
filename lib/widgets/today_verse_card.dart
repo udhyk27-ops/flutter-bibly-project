@@ -21,8 +21,12 @@ class _TodayVerseCardState extends State<TodayVerseCard> {
   }
 
   Future<void> _load() async {
-    final verse = await DailyVerseService.getToday();
-    if (mounted) setState(() => _verse = verse);
+    try {
+      final verse = await DailyVerseService.getToday();
+      if (mounted) setState(() => _verse = verse);
+    } catch (e) {
+      debugPrint('DailyVerse 오류: $e');
+    }
   }
 
   // 해당 장으로 이동
