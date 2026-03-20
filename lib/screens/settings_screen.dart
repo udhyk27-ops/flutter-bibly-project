@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/theme_provider.dart';
+import '../providers/reading_settings.dart';
 import '../core/app_theme.dart';
 import '../services/config_api_service.dart';
 import '../widgets/bottom_nav.dart';
@@ -12,8 +13,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -110,10 +109,10 @@ class _SettingsCard extends StatelessWidget {
 
 // ── 설정 행 ──────────────────────────────────────────
 class _SettingsRow extends StatelessWidget {
-  final IconData   icon;
-  final String     label;
-  final String?    subLabel;
-  final Widget?    trailing;
+  final IconData      icon;
+  final String        label;
+  final String?       subLabel;
+  final Widget?       trailing;
   final VoidCallback? onTap;
 
   const _SettingsRow({
@@ -133,9 +132,7 @@ class _SettingsRow extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: cs.outline, width: 0.5),
-          ),
+          border: Border(bottom: BorderSide(color: cs.outline, width: 0.5)),
         ),
         child: Row(
           children: [
@@ -170,10 +167,10 @@ class _SettingsRow extends StatelessWidget {
 
 // ── 마지막 행 (보더 없음) ──────────────────────────────
 class _SettingsRowLast extends StatelessWidget {
-  final IconData   icon;
-  final String     label;
-  final String?    subLabel;
-  final Widget?    trailing;
+  final IconData      icon;
+  final String        label;
+  final String?       subLabel;
+  final Widget?       trailing;
   final VoidCallback? onTap;
 
   const _SettingsRowLast({
@@ -206,16 +203,12 @@ class _SettingsRowLast extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 14, color: cs.onSurface),
-                  ),
+                  Text(label,
+                      style: TextStyle(fontSize: 14, color: cs.onSurface)),
                   if (subLabel != null) ...[
                     const SizedBox(height: 2),
-                    Text(
-                      subLabel!,
-                      style: TextStyle(fontSize: 11, color: cs.secondary),
-                    ),
+                    Text(subLabel!,
+                        style: TextStyle(fontSize: 11, color: cs.secondary)),
                   ],
                 ],
               ),
@@ -261,6 +254,19 @@ class _ThemeSelector extends StatelessWidget {
           isSelected: themeProvider.themeType == AppThemeType.blueGray,
           onTap: () => themeProvider.setTheme(AppThemeType.blueGray),
         ),
+        const SizedBox(height: 8),
+        _ThemeCard(
+          label: '양피지 & 세피아',
+          desc: '고전 성경책의 따뜻한 크림 계열',
+          colors: const [
+            Color(0xFF7B1D1D),
+            Color(0xFFEDE4CC),
+            Color(0xFFA0804A),
+            Color(0xFFF5EFE0),
+          ],
+          isSelected: themeProvider.themeType == AppThemeType.parchment,
+          onTap: () => themeProvider.setTheme(AppThemeType.parchment),
+        ),
       ],
     );
   }
@@ -300,7 +306,6 @@ class _ThemeCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 컬러 스와치
             Row(
               children: colors.map((c) => Container(
                 width: 22, height: 22,
@@ -334,24 +339,25 @@ class _ThemeCard extends StatelessWidget {
 }
 
 // ── 읽기 설정 ──────────────────────────────────────────
+// _fontSize / _lineHeight 는 ReadingSettings Provider 로 관리
+// _showVerseNum / _highlight 는 로컬 State 유지
 class _ReadingSettings extends StatefulWidget {
   @override
   State<_ReadingSettings> createState() => _ReadingSettingsState();
 }
 
 class _ReadingSettingsState extends State<_ReadingSettings> {
-  double _fontSize   = 17;
-  double _lineHeight = 1.85;
-  bool   _showVerseNum = true;
-  bool   _highlight    = true;
+  bool _showVerseNum = true;
+  bool _highlight    = true;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs       = Theme.of(context).colorScheme;
+    final settings = context.watch<ReadingSettings>();
 
     return _SettingsCard(
       children: [
-        // 글씨 크기
+        // ── 글씨 크기 ──────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
           child: Row(
@@ -374,11 +380,9 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
                 ],
               ),
               Text(
-                '${_fontSize.toInt()}px',
+                '${settings.fontSize.toInt()}px',
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: cs.primary,
+                  fontSize: 13, fontWeight: FontWeight.w500, color: cs.primary,
                 ),
               ),
             ],
@@ -391,11 +395,12 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
               Text('가', style: TextStyle(fontSize: 12, color: cs.secondary)),
               Expanded(
                 child: Slider(
-                  value: _fontSize,
+                  value: settings.fontSize,
                   min: 12, max: 26, divisions: 7,
                   activeColor: cs.primary,
                   inactiveColor: cs.surfaceContainerHighest,
-                  onChanged: (v) => setState(() => _fontSize = v),
+                  onChanged: (v) =>
+                      context.read<ReadingSettings>().setFontSize(v),
                 ),
               ),
               Text('가',
@@ -407,7 +412,7 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
           ),
         ),
 
-        // 줄 간격
+        // ── 줄 간격 ────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Row(
@@ -430,11 +435,9 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
                 ],
               ),
               Text(
-                _lineHeight.toStringAsFixed(1),
+                settings.lineHeight.toStringAsFixed(1),
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: cs.primary,
+                  fontSize: 13, fontWeight: FontWeight.w500, color: cs.primary,
                 ),
               ),
             ],
@@ -443,15 +446,16 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Slider(
-            value: _lineHeight,
+            value: settings.lineHeight,
             min: 1.4, max: 2.4, divisions: 5,
             activeColor: cs.primary,
             inactiveColor: cs.surfaceContainerHighest,
-            onChanged: (v) => setState(() => _lineHeight = v),
+            onChanged: (v) =>
+                context.read<ReadingSettings>().setLineHeight(v),
           ),
         ),
 
-        // 절 번호 표시
+        // ── 절 번호 표시 ────────────────────────────────
         _SettingsRow(
           icon: Icons.tag,
           label: '절 번호 표시',
@@ -462,7 +466,7 @@ class _ReadingSettingsState extends State<_ReadingSettings> {
           ),
         ),
 
-        // 하이라이트
+        // ── 하이라이트 ──────────────────────────────────
         _SettingsRowLast(
           icon: Icons.highlight_outlined,
           label: '하이라이트 표시',
@@ -648,10 +652,10 @@ class _NotificationSettings extends StatefulWidget {
 }
 
 class _NotificationSettingsState extends State<_NotificationSettings> {
-  bool      _dailyVerse = true;
+  bool      _dailyVerse     = true;
   bool      _prayerReminder = false;
-  TimeOfDay _verseTime  = const TimeOfDay(hour: 7, minute: 0);
-  TimeOfDay _prayerTime = const TimeOfDay(hour: 21, minute: 0);
+  TimeOfDay _verseTime      = const TimeOfDay(hour: 7,  minute: 0);
+  TimeOfDay _prayerTime     = const TimeOfDay(hour: 21, minute: 0);
 
   Future<void> _pickTime(BuildContext context, bool isVerse) async {
     final picked = await showTimePicker(
@@ -666,11 +670,8 @@ class _NotificationSettingsState extends State<_NotificationSettings> {
     );
     if (picked != null) {
       setState(() {
-        if (isVerse) {
-          _verseTime = picked;
-        } else {
-          _prayerTime = picked;
-        }
+        if (isVerse) _verseTime = picked;
+        else         _prayerTime = picked;
       });
     }
   }
@@ -684,9 +685,7 @@ class _NotificationSettingsState extends State<_NotificationSettings> {
         _SettingsRow(
           icon: Icons.wb_sunny_outlined,
           label: '오늘의 말씀 알림',
-          subLabel: _dailyVerse
-              ? '매일 ${_verseTime.format(context)}'
-              : '꺼짐',
+          subLabel: _dailyVerse ? '매일 ${_verseTime.format(context)}' : '꺼짐',
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -779,7 +778,8 @@ class _AppInfo extends StatelessWidget {
               color: cs.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text('최신 버전', style: tt.labelSmall?.copyWith(color: cs.primary)),
+            child: Text('최신 버전',
+                style: tt.labelSmall?.copyWith(color: cs.primary)),
           ),
         ),
         _SettingsRow(
@@ -807,7 +807,7 @@ class _AppInfo extends StatelessWidget {
                 builder: (_) => WebViewScreen(
                   url: ConfigApiService().privacyUrl,
                   title: '개인정보처리방침',
-                )
+                ),
               ),
             );
           },
@@ -820,10 +820,10 @@ class _AppInfo extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => WebViewScreen(
-                    url: ConfigApiService().termsUrl,
-                    title: '이용약관',
-                  )
+                builder: (_) => WebViewScreen(
+                  url: ConfigApiService().termsUrl,
+                  title: '이용약관',
+                ),
               ),
             );
           },

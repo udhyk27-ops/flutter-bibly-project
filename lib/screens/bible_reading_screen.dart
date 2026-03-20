@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../model/bible_models.dart';
+import '../providers/reading_settings.dart';
 import '../services/bible_api_service.dart';
 import '../services/ai_service.dart';
 import '../services/recent_read_service.dart';
@@ -23,17 +26,12 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
   BibleChapterModel? _chapter;
   bool    _isLoading = true;
   String? _error;
-  bool _goingForward = true; // 다음 장이면 true, 이전 장이면 false
 
   int     _currentChapter  = 1;
   String? _selectedVerseId;
-  String? _selectedText;
 
   final Map<String, String> _aiAnswers = {};
   final Map<String, bool>   _aiLoading = {};
-
-  double _fontSize   = 17;
-  double _lineHeight = 1.85;
 
   @override
   void initState() {
@@ -47,10 +45,8 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       _isLoading       = true;
       _error           = null;
       _selectedVerseId = null;
-      _selectedText    = null;
     });
 
-    /// 최근 읽은 리스트
     await RecentReadService.save(
       bookName:        widget.book.name,
       bookEnglishName: widget.book.englishName,
@@ -67,24 +63,15 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
         bookNumber: widget.book.number,
         chapter:    _currentChapter,
       );
-      setState(() {
-        _chapter   = chapter;
-        _isLoading = false;
-      });
+      setState(() { _chapter = chapter; _isLoading = false; });
     } catch (e) {
-      setState(() {
-        _error     = e.toString();
-        _isLoading = false;
-      });
+      setState(() { _error = e.toString(); _isLoading = false; });
     }
   }
 
   Future<void> _goToChapter(int chapter) async {
     if (chapter < 1 || chapter > widget.book.totalChapters) return;
-    setState(() {
-      _goingForward  = chapter > _currentChapter;
-      _currentChapter = chapter;
-    });
+    setState(() => _currentChapter = chapter);
     await _loadChapter();
   }
 
@@ -92,10 +79,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
     setState(() => _aiLoading[verseId] = true);
     try {
       final answer = await AiService.askVerse(text);
-      setState(() {
-        _aiAnswers[verseId] = answer;
-        _aiLoading[verseId] = false;
-      });
+      setState(() { _aiAnswers[verseId] = answer; _aiLoading[verseId] = false; });
     } catch (e) {
       setState(() {
         _aiAnswers[verseId] = '답변을 불러오지 못했어요. 다시 시도해주세요.';
@@ -104,169 +88,143 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
     }
   }
 
-  void _onVerseTap(String verseId, String text) {
+  void _onVerseTap(String verseId) {
     setState(() {
-      if (_selectedVerseId == verseId) {
-        _selectedVerseId = null;
-        _selectedText    = null;
-      } else {
-        _selectedVerseId = verseId;
-        _selectedText    = text;
-      }
+      _selectedVerseId = (_selectedVerseId == verseId) ? null : verseId;
     });
   }
 
+  // 읽기 설정 시트 — Provider 에서 초기값을 읽고, 변경 시 Provider 에 씁니다.
   void _showSettingsSheet(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final settings = context.read<ReadingSettings>();
+    final cs       = Theme.of(context).colorScheme;
 
-    // 로컬 변수로 현재 값 복사 (StatefulBuilder 안에서 관리)
-    double localFontSize   = _fontSize;
-    double localLineHeight = _lineHeight;
+    double localFontSize   = settings.fontSize;
+    double localLineHeight = settings.lineHeight;
 
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 250),
-      transitionBuilder: (context, anim, _, child) {
-        return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
-          child: child,
-        );
-      },
-      pageBuilder: (context, _, __) {
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: Material(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(20)),
-            child: SafeArea(
-              top: false,
-              child: StatefulBuilder(
-                builder: (context, setSheet) => Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 핸들
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: cs.outline,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+      barrierColor: Colors.black45,
+      transitionDuration: const Duration(milliseconds: 260),
+      transitionBuilder: (ctx, anim, _, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+            .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
+        child: child,
+      ),
+      pageBuilder: (ctx, _, __) => Align(
+        alignment: Alignment.bottomCenter,
+        child: Material(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: SafeArea(
+            top: false,
+            child: StatefulBuilder(
+              builder: (ctx, setSheet) => Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 핸들
+                    Center(
+                      child: Container(
+                        width: 36, height: 4,
+                        decoration: BoxDecoration(
+                          color: cs.outline,
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        '읽기 설정',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: cs.onSurface),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      '읽기 설정',
+                      style: GoogleFonts.ebGaramond(
+                        fontSize: 16, fontWeight: FontWeight.w600,
+                        color: cs.onSurface, letterSpacing: 0.4,
                       ),
-                      const SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 20),
 
-                      // 글씨 크기
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('글씨 크기',
-                              style: TextStyle(
-                                  fontSize: 14, color: cs.onSurface)),
-                          Text('${localFontSize.toInt()}px',
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: cs.primary)),
-                        ],
-                      ),
-                      _CustomSlider(
-                        value: localFontSize,
-                        min: 12,
-                        max: 26,
-                        activeColor: cs.primary,
-                        inactiveColor: cs.surfaceContainerHighest,
-                        onChanged: (v) {
-                          setSheet(() => localFontSize = v);
-                          setState(() => _fontSize = v);
-                        },
-                      ),
+                    // 글씨 크기
+                    _SliderRow(
+                      label: '글씨 크기',
+                      valueText: '${localFontSize.toInt()}px',
+                      cs: cs,
+                    ),
+                    _CustomSlider(
+                      value: localFontSize, min: 12, max: 26,
+                      activeColor: cs.primary,
+                      inactiveColor: cs.surfaceContainerHighest,
+                      onChanged: (v) {
+                        setSheet(() => localFontSize = v);
+                        context.read<ReadingSettings>().setFontSize(v);
+                      },
+                    ),
+                    const SizedBox(height: 8),
 
-                      const SizedBox(height: 8),
-
-                      // 줄 간격
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('줄 간격',
-                              style: TextStyle(
-                                  fontSize: 14, color: cs.onSurface)),
-                          Text(localLineHeight.toStringAsFixed(1),
-                              style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: cs.primary)),
-                        ],
-                      ),
-                      _CustomSlider(
-                        value: localLineHeight,
-                        min: 1.4,
-                        max: 2.4,
-                        activeColor: cs.primary,
-                        inactiveColor: cs.surfaceContainerHighest,
-                        onChanged: (v) {
-                          setSheet(() => localLineHeight = v);
-                          setState(() => _lineHeight = v);
-                        },
-                      ),
-                    ],
-                  ),
+                    // 줄 간격
+                    _SliderRow(
+                      label: '줄 간격',
+                      valueText: localLineHeight.toStringAsFixed(1),
+                      cs: cs,
+                    ),
+                    _CustomSlider(
+                      value: localLineHeight, min: 1.4, max: 2.4,
+                      activeColor: cs.primary,
+                      inactiveColor: cs.surfaceContainerHighest,
+                      onChanged: (v) {
+                        setSheet(() => localLineHeight = v);
+                        context.read<ReadingSettings>().setLineHeight(v);
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final cs       = Theme.of(context).colorScheme;
+    final settings = context.watch<ReadingSettings>();
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(
-              book:          widget.book,
-              chapterNumber: _currentChapter,
-              onSettingsTap: () => _showSettingsSheet(context),
+      body: Stack(
+        children: [
+          Container(color: Theme.of(context).scaffoldBackgroundColor),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _PaperTexturePainter(cs.onSurface),
             ),
-            Expanded(
-              child: _isLoading
-                  ? Center(child: CircularProgressIndicator(color: cs.primary))
-                  : _error != null
-                  ? _ErrorView(error: _error!, onRetry: _loadChapter)
-                  : _chapter == null
-                  ? const SizedBox()
-                  : AnimatedSwitcher(
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _TopBar(
+                  book:          widget.book,
+                  chapterNumber: _currentChapter,
+                  onSettingsTap: () => _showSettingsSheet(context),
+                ),
+                Expanded(
+                  child: _isLoading
+                      ? Center(
+                      child: CircularProgressIndicator(color: cs.primary))
+                      : _error != null
+                      ? _ErrorView(error: _error!, onRetry: _loadChapter)
+                      : _chapter == null
+                      ? const SizedBox()
+                      : AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
-                    switchInCurve: Curves.easeIn,
-                    switchOutCurve: Curves.easeOut,
                     transitionBuilder: (child, anim) => FadeTransition(
                       opacity: CurvedAnimation(
                         parent: anim,
-                        curve: const Interval(0.4, 1.0),
+                        curve: const Interval(0.3, 1.0),
                       ),
                       child: child,
                     ),
@@ -277,188 +235,21 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                         selectedVerseId: _selectedVerseId,
                         aiAnswers:       _aiAnswers,
                         aiLoading:       _aiLoading,
-                        fontSize:        _fontSize,
-                        lineHeight:      _lineHeight,
+                        fontSize:        settings.fontSize,
+                        lineHeight:      settings.lineHeight,
                         onVerseTap:      _onVerseTap,
                         onAskAI:         _askAI,
                       ),
                     ),
                   ),
                 ),
-            _BottomChapterNav(
-              currentChapter: _currentChapter,
-              totalChapters:  widget.book.totalChapters,
-              onPrev: () => _goToChapter(_currentChapter - 1),
-              onNext: () => _goToChapter(_currentChapter + 1),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── 커스텀 슬라이더 ────────────────────────────────────
-class _CustomSlider extends StatelessWidget {
-  final double value;
-  final double min;
-  final double max;
-  final Color  activeColor;
-  final Color  inactiveColor;
-  final ValueChanged<double> onChanged;
-
-  const _CustomSlider({
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.activeColor,
-    required this.inactiveColor,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final ratio = ((value - min) / (max - min)).clamp(0.0, 1.0);
-        const thumbSize = 20.0;
-
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragUpdate: (details) {
-            final newRatio =
-            (details.localPosition.dx / width).clamp(0.0, 1.0);
-            onChanged(min + newRatio * (max - min));
-          },
-          onTapDown: (details) {
-            final newRatio =
-            (details.localPosition.dx / width).clamp(0.0, 1.0);
-            onChanged(min + newRatio * (max - min));
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: SizedBox(
-              height: thumbSize,
-              width: width,
-              child: Stack(
-                alignment: Alignment.centerLeft,
-                children: [
-                  // 배경 트랙
-                  Positioned(
-                    top: (thumbSize - 4) / 2,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: inactiveColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  // 활성 트랙
-                  Positioned(
-                    top: (thumbSize - 4) / 2,
-                    left: 0,
-                    child: Container(
-                      height: 4,
-                      width: width * ratio,
-                      decoration: BoxDecoration(
-                        color: activeColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  // 썸
-                  Positioned(
-                    left: (width * ratio - thumbSize / 2)
-                        .clamp(0, width - thumbSize),
-                    child: Container(
-                      width: thumbSize,
-                      height: thumbSize,
-                      decoration: BoxDecoration(
-                        color: activeColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ── 상단 바 ──────────────────────────────────────────
-class _TopBar extends StatelessWidget {
-  final BibleBookModel book;
-  final int            chapterNumber;
-  final VoidCallback   onSettingsTap;
-
-  const _TopBar({
-    required this.book,
-    required this.chapterNumber,
-    required this.onSettingsTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Icon(Icons.arrow_back_ios, size: 18, color: cs.primary),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${book.name} $chapterNumber장',
-                    style: tt.headlineSmall),
-                Text(book.englishName, style: tt.labelMedium),
+                _BottomChapterNav(
+                  currentChapter: _currentChapter,
+                  totalChapters:  widget.book.totalChapters,
+                  onPrev: () => _goToChapter(_currentChapter - 1),
+                  onNext: () => _goToChapter(_currentChapter + 1),
+                ),
               ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.star_outline, size: 18, color: cs.primary),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onSettingsTap,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(Icons.text_fields_outlined,
-                  size: 18, color: cs.primary),
             ),
           ),
         ],
@@ -467,7 +258,196 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-// ── 절 목록 ──────────────────────────────────────────
+// ── 종이 질감 ────────────────────────────────────────────
+class _PaperTexturePainter extends CustomPainter {
+  final Color baseColor;
+  _PaperTexturePainter(this.baseColor);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = baseColor.withOpacity(0.018)
+      ..strokeWidth = 1;
+
+    int rx = 127, ry = 311;
+    int next() {
+      rx = (rx * 1664525  + 1013904223) & 0xFFFFFFFF;
+      ry = (ry * 22695477 + 1)          & 0xFFFFFFFF;
+      return (rx ^ ry) & 0xFFFFFFFF;
+    }
+
+    for (int i = 0; i < 3000; i++) {
+      final x = (next() % 10000) / 10000.0 * size.width;
+      final y = (next() % 10000) / 10000.0 * size.height;
+      canvas.drawCircle(Offset(x, y), 0.55, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PaperTexturePainter old) => old.baseColor != baseColor;
+}
+
+// ── 슬라이더 레이블 ────────────────────────────────────
+class _SliderRow extends StatelessWidget {
+  final String label, valueText;
+  final ColorScheme cs;
+  const _SliderRow({required this.label, required this.valueText, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 14, color: cs.onSurface)),
+        Text(valueText,
+            style: TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
+      ],
+    );
+  }
+}
+
+// ── 커스텀 슬라이더 ────────────────────────────────────
+class _CustomSlider extends StatelessWidget {
+  final double value, min, max;
+  final Color  activeColor, inactiveColor;
+  final ValueChanged<double> onChanged;
+
+  const _CustomSlider({
+    required this.value, required this.min, required this.max,
+    required this.activeColor, required this.inactiveColor,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final width   = constraints.maxWidth;
+      final ratio   = ((value - min) / (max - min)).clamp(0.0, 1.0);
+      const thumbSz = 20.0;
+
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragUpdate: (d) =>
+            onChanged(min + (d.localPosition.dx / width).clamp(0.0, 1.0) * (max - min)),
+        onTapDown: (d) =>
+            onChanged(min + (d.localPosition.dx / width).clamp(0.0, 1.0) * (max - min)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: SizedBox(
+            height: thumbSz, width: width,
+            child: Stack(alignment: Alignment.centerLeft, children: [
+              Positioned(
+                top: (thumbSz - 4) / 2, left: 0, right: 0,
+                child: Container(height: 4,
+                    decoration: BoxDecoration(
+                        color: inactiveColor,
+                        borderRadius: BorderRadius.circular(2))),
+              ),
+              Positioned(
+                top: (thumbSz - 4) / 2, left: 0,
+                child: Container(height: 4, width: width * ratio,
+                    decoration: BoxDecoration(
+                        color: activeColor,
+                        borderRadius: BorderRadius.circular(2))),
+              ),
+              Positioned(
+                left: (width * ratio - thumbSz / 2).clamp(0, width - thumbSz),
+                child: Container(
+                  width: thumbSz, height: thumbSz,
+                  decoration: BoxDecoration(
+                    color: activeColor, shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 4, offset: const Offset(0, 2))],
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ── 상단 바 ──────────────────────────────────────────────
+class _TopBar extends StatelessWidget {
+  final BibleBookModel book;
+  final int            chapterNumber;
+  final VoidCallback   onSettingsTap;
+
+  const _TopBar({
+    required this.book, required this.chapterNumber, required this.onSettingsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Icon(Icons.arrow_back_ios, size: 18, color: cs.primary),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${book.name} $chapterNumber장',
+                      style: GoogleFonts.ebGaramond(
+                        fontSize: 20, fontWeight: FontWeight.w700,
+                        color: cs.onSurface, letterSpacing: 0.3,
+                      ),
+                    ),
+                    Text(
+                      book.englishName.toUpperCase(),
+                      style: GoogleFonts.ebGaramond(
+                        fontSize: 10, color: cs.secondary,
+                        letterSpacing: 3.0, fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _TopIconBtn(icon: Icons.star_outline,         cs: cs, onTap: () {}),
+              const SizedBox(width: 8),
+              _TopIconBtn(icon: Icons.text_fields_outlined, cs: cs, onTap: onSettingsTap),
+            ],
+          ),
+        ),
+        Divider(height: 1, thickness: 0.6, color: cs.outline),
+      ],
+    );
+  }
+}
+
+class _TopIconBtn extends StatelessWidget {
+  final IconData icon; final ColorScheme cs; final VoidCallback onTap;
+  const _TopIconBtn({required this.icon, required this.cs, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 34, height: 34,
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, size: 18, color: cs.primary),
+    ),
+  );
+}
+
+// ── 절 목록 ──────────────────────────────────────────────
 class _VerseList extends StatelessWidget {
   final List<BibleVerseModel>    verses;
   final String?                  selectedVerseId;
@@ -475,18 +455,14 @@ class _VerseList extends StatelessWidget {
   final Map<String, bool>        aiLoading;
   final double                   fontSize;
   final double                   lineHeight;
-  final Function(String, String) onVerseTap;
+  final Function(String)         onVerseTap;
   final Function(String, String) onAskAI;
 
   const _VerseList({
-    required this.verses,
-    required this.selectedVerseId,
-    required this.aiAnswers,
-    required this.aiLoading,
-    required this.fontSize,
-    required this.lineHeight,
-    required this.onVerseTap,
-    required this.onAskAI,
+    required this.verses, required this.selectedVerseId,
+    required this.aiAnswers, required this.aiLoading,
+    required this.fontSize, required this.lineHeight,
+    required this.onVerseTap, required this.onAskAI,
   });
 
   @override
@@ -512,17 +488,12 @@ class _VerseList extends StatelessWidget {
               isSelected: isSelected,
               fontSize:   fontSize,
               lineHeight: lineHeight,
-              onTap:      () => onVerseTap(verseId, verse.text),
+              onTap:      () => onVerseTap(verseId),
             ),
             if (isSelected)
-              _ActionBar(
-                verseId: verseId,
-                text:    verse.text,
-                onAskAI: onAskAI,
-              ),
-            if (isAiLoading) _AiLoadingBubble(),
-            if (aiAnswer != null && !isAiLoading)
-              _AiBubble(answer: aiAnswer),
+              _ActionBar(verseId: verseId, text: verse.text, onAskAI: onAskAI),
+            if (isAiLoading) const _AiLoadingBubble(),
+            if (aiAnswer != null && !isAiLoading) _AiBubble(answer: aiAnswer),
           ],
         );
       },
@@ -530,7 +501,7 @@ class _VerseList extends StatelessWidget {
   }
 }
 
-// ── 절 행 ──────────────────────────────────────────
+// ── 절 행 ────────────────────────────────────────────────
 class _VerseRow extends StatelessWidget {
   final String       verseNum;
   final String       text;
@@ -540,18 +511,14 @@ class _VerseRow extends StatelessWidget {
   final VoidCallback onTap;
 
   const _VerseRow({
-    required this.verseNum,
-    required this.text,
-    required this.isSelected,
-    required this.fontSize,
-    required this.lineHeight,
-    required this.onTap,
+    required this.verseNum, required this.text, required this.isSelected,
+    required this.fontSize, required this.lineHeight, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -559,9 +526,7 @@ class _VerseRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 2),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected
-              ? cs.surfaceContainerHighest
-              : Colors.transparent,
+          color: isSelected ? cs.surfaceContainerHighest : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -569,23 +534,24 @@ class _VerseRow extends StatelessWidget {
           children: [
             SizedBox(
               width: 28,
-              child: Text(
-                verseNum,
-                style: tt.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: cs.primary,
-                  height: lineHeight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  verseNum,
+                  style: GoogleFonts.ebGaramond(
+                    fontSize: 11, fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w700,
+                    color: cs.primary, height: lineHeight,
+                  ),
                 ),
               ),
             ),
             Expanded(
               child: Text(
                 text,
-                style: TextStyle(
-                  fontSize:   fontSize,
-                  color:      cs.onSurface,
-                  height:     lineHeight,
-                  fontFamily: 'Georgia',
+                style: GoogleFonts.notoSerifKr(
+                  fontSize: fontSize, color: cs.onSurface,
+                  height: lineHeight, fontWeight: FontWeight.w400,
                 ),
               ),
             ),
@@ -596,17 +562,13 @@ class _VerseRow extends StatelessWidget {
   }
 }
 
-// ── 액션 바 ──────────────────────────────────────────
+// ── 액션 바 ──────────────────────────────────────────────
 class _ActionBar extends StatelessWidget {
   final String               verseId;
   final String               text;
   final Function(String, String) onAskAI;
 
-  const _ActionBar({
-    required this.verseId,
-    required this.text,
-    required this.onAskAI,
-  });
+  const _ActionBar({required this.verseId, required this.text, required this.onAskAI});
 
   @override
   Widget build(BuildContext context) {
@@ -615,32 +577,23 @@ class _ActionBar extends StatelessWidget {
       child: Row(
         children: [
           _ActionChip(
-            label: '복사',
-            icon:  Icons.copy_outlined,
+            label: '복사', icon: Icons.copy_outlined,
             onTap: () {
               Clipboard.setData(ClipboardData(text: text));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('클립보드에 복사됐어요'),
-                  backgroundColor:
-                  Theme.of(context).colorScheme.primary,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: const Text('클립보드에 복사됐어요'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                duration: const Duration(seconds: 1),
+              ));
             },
           ),
           const SizedBox(width: 6),
           _ActionChip(
-            label: '하이라이트',
-            icon:  Icons.highlight_outlined,
-            onTap: () {},
-          ),
+              label: '하이라이트', icon: Icons.highlight_outlined, onTap: () {}),
           const SizedBox(width: 6),
           _ActionChip(
-            label:     'AI 질문',
-            icon:      Icons.auto_awesome_outlined,
-            isPrimary: true,
-            onTap:     () => onAskAI(verseId, text),
+            label: 'AI 질문', icon: Icons.auto_awesome_outlined,
+            isPrimary: true, onTap: () => onAskAI(verseId, text),
           ),
         ],
       ),
@@ -649,23 +602,17 @@ class _ActionBar extends StatelessWidget {
 }
 
 class _ActionChip extends StatelessWidget {
-  final String       label;
-  final IconData     icon;
-  final bool         isPrimary;
-  final VoidCallback onTap;
+  final String label; final IconData icon;
+  final bool isPrimary; final VoidCallback onTap;
 
   const _ActionChip({
-    required this.label,
-    required this.icon,
-    required this.onTap,
+    required this.label, required this.icon, required this.onTap,
     this.isPrimary = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -677,17 +624,13 @@ class _ActionChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon,
-                size: 13,
+            Icon(icon, size: 13,
                 color: isPrimary ? cs.onPrimary : cs.secondary),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: tt.labelMedium?.copyWith(
-                fontWeight: FontWeight.w500,
-                color: isPrimary ? cs.onPrimary : cs.secondary,
-              ),
-            ),
+            Text(label,
+                style: GoogleFonts.ebGaramond(
+                    fontSize: 12, fontWeight: FontWeight.w600,
+                    color: isPrimary ? cs.onPrimary : cs.secondary)),
           ],
         ),
       ),
@@ -695,8 +638,10 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-// ── AI 로딩 버블 ──────────────────────────────────────
+// ── AI 로딩 버블 ─────────────────────────────────────────
 class _AiLoadingBubble extends StatelessWidget {
+  const _AiLoadingBubble();
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -706,22 +651,18 @@ class _AiLoadingBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
         borderRadius: const BorderRadius.only(
-          topRight:    Radius.circular(12),
-          bottomLeft:  Radius.circular(12),
+          topRight: Radius.circular(12), bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-                strokeWidth: 2, color: cs.primary),
-          ),
+          SizedBox(width: 14, height: 14,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: cs.primary)),
           const SizedBox(width: 8),
-          Text('AI가 해석 중이에요...',
+          Text('AI가 해석 중이에요…',
               style: TextStyle(fontSize: 12, color: cs.secondary)),
         ],
       ),
@@ -729,14 +670,13 @@ class _AiLoadingBubble extends StatelessWidget {
   }
 }
 
-// ── AI 답변 버블 ──────────────────────────────────────
+// ── AI 답변 버블 ─────────────────────────────────────────
 class _AiBubble extends StatelessWidget {
   final String answer;
   const _AiBubble({required this.answer});
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(left: 38, bottom: 16, right: 8),
@@ -744,8 +684,7 @@ class _AiBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
         borderRadius: const BorderRadius.only(
-          topRight:    Radius.circular(12),
-          bottomLeft:  Radius.circular(12),
+          topRight: Radius.circular(12), bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
         ),
         border: Border.all(color: cs.outline, width: 0.5),
@@ -753,33 +692,26 @@ class _AiBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.auto_awesome, size: 13, color: cs.primary),
-              const SizedBox(width: 4),
-              Text(
-                'AI 해석',
-                style: tt.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600, color: cs.primary),
-              ),
-            ],
-          ),
+          Row(children: [
+            Icon(Icons.auto_awesome, size: 13, color: cs.primary),
+            const SizedBox(width: 4),
+            Text('AI 해석',
+                style: GoogleFonts.ebGaramond(
+                    fontSize: 13, fontWeight: FontWeight.w700,
+                    color: cs.primary, letterSpacing: 0.5)),
+          ]),
           const SizedBox(height: 8),
-          Text(
-            answer,
-            style: TextStyle(
-                fontSize: 13, color: cs.onSurface, height: 1.65),
-          ),
+          Text(answer,
+              style: GoogleFonts.notoSerifKr(
+                  fontSize: 13, color: cs.onSurface, height: 1.7)),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              _MoreBtn(label: '더 자세히', onTap: () {}),
-              const SizedBox(width: 6),
-              _MoreBtn(label: '원어 보기', onTap: () {}),
-              const SizedBox(width: 6),
-              _MoreBtn(label: '관련 구절', onTap: () {}),
-            ],
-          ),
+          Row(children: [
+            _MoreBtn(label: '더 자세히', onTap: () {}),
+            const SizedBox(width: 6),
+            _MoreBtn(label: '원어 보기', onTap: () {}),
+            const SizedBox(width: 6),
+            _MoreBtn(label: '관련 구절', onTap: () {}),
+          ]),
         ],
       ),
     );
@@ -787,13 +719,11 @@ class _AiBubble extends StatelessWidget {
 }
 
 class _MoreBtn extends StatelessWidget {
-  final String       label;
-  final VoidCallback onTap;
+  final String label; final VoidCallback onTap;
   const _MoreBtn({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -804,19 +734,16 @@ class _MoreBtn extends StatelessWidget {
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: cs.outline, width: 0.5),
         ),
-        child: Text(
-          label,
-          style: tt.labelMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            color: cs.onSurface,
-          ),
-        ),
+        child: Text(label,
+            style: GoogleFonts.ebGaramond(
+                fontSize: 12, fontWeight: FontWeight.w500,
+                color: cs.onSurface)),
       ),
     );
   }
 }
 
-// ── 하단 장 이동 ──────────────────────────────────────
+// ── 하단 장 이동 ─────────────────────────────────────────
 class _BottomChapterNav extends StatelessWidget {
   final int          currentChapter;
   final int          totalChapters;
@@ -824,10 +751,8 @@ class _BottomChapterNav extends StatelessWidget {
   final VoidCallback onNext;
 
   const _BottomChapterNav({
-    required this.currentChapter,
-    required this.totalChapters,
-    required this.onPrev,
-    required this.onNext,
+    required this.currentChapter, required this.totalChapters,
+    required this.onPrev, required this.onNext,
   });
 
   @override
@@ -843,7 +768,6 @@ class _BottomChapterNav extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 이전 장
           Expanded(
             child: GestureDetector(
               onTap: hasPrev ? onPrev : null,
@@ -858,44 +782,30 @@ class _BottomChapterNav extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.arrow_back_ios,
-                        size: 14,
+                    Icon(Icons.arrow_back_ios, size: 14,
                         color: hasPrev ? cs.primary : cs.outline),
                     const SizedBox(width: 4),
-                    Text(
-                      '${currentChapter - 1}장',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: hasPrev ? cs.primary : cs.outline,
-                      ),
-                    ),
+                    Text('${currentChapter - 1}장',
+                        style: GoogleFonts.ebGaramond(
+                            fontSize: 14, fontWeight: FontWeight.w500,
+                            color: hasPrev ? cs.primary : cs.outline)),
                   ],
                 ),
               ),
             ),
           ),
           const SizedBox(width: 10),
-
-          // 현재 장
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: cs.primary,
-              borderRadius: BorderRadius.circular(12),
+              color: cs.primary, borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              '$currentChapter장',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: cs.onPrimary,
-              ),
-            ),
+            child: Text('$currentChapter장',
+                style: GoogleFonts.ebGaramond(
+                    fontSize: 14, fontWeight: FontWeight.w700,
+                    color: cs.onPrimary)),
           ),
           const SizedBox(width: 10),
-
-          // 다음 장
           Expanded(
             child: GestureDetector(
               onTap: hasNext ? onNext : null,
@@ -910,17 +820,12 @@ class _BottomChapterNav extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      '${currentChapter + 1}장',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: hasNext ? cs.primary : cs.outline,
-                      ),
-                    ),
+                    Text('${currentChapter + 1}장',
+                        style: GoogleFonts.ebGaramond(
+                            fontSize: 14, fontWeight: FontWeight.w500,
+                            color: hasNext ? cs.primary : cs.outline)),
                     const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward_ios,
-                        size: 14,
+                    Icon(Icons.arrow_forward_ios, size: 14,
                         color: hasNext ? cs.primary : cs.outline),
                   ],
                 ),
@@ -933,7 +838,7 @@ class _BottomChapterNav extends StatelessWidget {
   }
 }
 
-// ── 에러 화면 ──────────────────────────────────────────
+// ── 에러 화면 ────────────────────────────────────────────
 class _ErrorView extends StatelessWidget {
   final String       error;
   final VoidCallback onRetry;
@@ -949,7 +854,8 @@ class _ErrorView extends StatelessWidget {
           Icon(Icons.wifi_off_outlined, size: 48, color: cs.outline),
           const SizedBox(height: 12),
           Text('불러오기 실패',
-              style: TextStyle(fontSize: 15, color: cs.onSurface)),
+              style: GoogleFonts.notoSerifKr(
+                  fontSize: 15, color: cs.onSurface)),
           const SizedBox(height: 6),
           Text(error,
               style: TextStyle(fontSize: 12, color: cs.secondary),
@@ -965,7 +871,9 @@ class _ErrorView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('다시 시도',
-                  style: TextStyle(fontSize: 13, color: cs.onPrimary)),
+                  style: GoogleFonts.ebGaramond(
+                      fontSize: 13, color: cs.onPrimary,
+                      fontWeight: FontWeight.w600)),
             ),
           ),
         ],
