@@ -1,5 +1,6 @@
 import 'package:Bibly/providers/reading_settings.dart';
 import 'package:Bibly/services/config_api_service.dart';
+import 'package:Bibly/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,12 +14,15 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   ConfigApiService().getRemoteConfig();
+
+  await NotificationService().init();
   await BibleApiService.init();
+
   runApp(
       MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => ThemeProvider()),
-          ChangeNotifierProvider(create: (_) => ReadingSettings()), // 추가
+          ChangeNotifierProvider(create: (_) => ReadingSettings()),
         ],
         child: MyApp(),
       )

@@ -30,6 +30,10 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
   int     _currentChapter  = 1;
   String? _selectedVerseId;
 
+  // verseId → 하이라이트 색상 (null 이면 미하이라이트)
+  // 실제 저장 로직이 생기면 여기서 DB/서비스로 교체하세요.
+  final Map<String, Color> _highlights = {};
+
   final Map<String, String> _aiAnswers = {};
   final Map<String, bool>   _aiLoading = {};
 
@@ -94,7 +98,18 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
     });
   }
 
-  // 읽기 설정 시트 — Provider 에서 초기값을 읽고, 변경 시 Provider 에 씁니다.
+  void _onHighlight(String verseId) {
+    setState(() {
+      if (_highlights.containsKey(verseId)) {
+        _highlights.remove(verseId);
+      } else {
+        // 기본 하이라이트 색상 — 테마 primary 를 연하게
+        final cs = Theme.of(context).colorScheme;
+        _highlights[verseId] = cs.primary.withOpacity(0.15);
+      }
+    });
+  }
+
   void _showSettingsSheet(BuildContext context) {
     final settings = context.read<ReadingSettings>();
     final cs       = Theme.of(context).colorScheme;
@@ -127,7 +142,6 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 핸들
                     Center(
                       child: Container(
                         width: 36, height: 4,
@@ -138,21 +152,14 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(
-                      '읽기 설정',
-                      style: GoogleFonts.ebGaramond(
-                        fontSize: 16, fontWeight: FontWeight.w600,
-                        color: cs.onSurface, letterSpacing: 0.4,
-                      ),
-                    ),
+                    Text('읽기 설정',
+                        style: GoogleFonts.ebGaramond(
+                          fontSize: 16, fontWeight: FontWeight.w600,
+                          color: cs.onSurface, letterSpacing: 0.4,
+                        )),
                     const SizedBox(height: 20),
-
-                    // 글씨 크기
-                    _SliderRow(
-                      label: '글씨 크기',
-                      valueText: '${localFontSize.toInt()}px',
-                      cs: cs,
-                    ),
+                    _SliderRow(label: '글씨 크기',
+                        valueText: '${localFontSize.toInt()}px', cs: cs),
                     _CustomSlider(
                       value: localFontSize, min: 12, max: 26,
                       activeColor: cs.primary,
@@ -163,13 +170,8 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                       },
                     ),
                     const SizedBox(height: 8),
-
-                    // 줄 간격
-                    _SliderRow(
-                      label: '줄 간격',
-                      valueText: localLineHeight.toStringAsFixed(1),
-                      cs: cs,
-                    ),
+                    _SliderRow(label: '줄 간격',
+                        valueText: localLineHeight.toStringAsFixed(1), cs: cs),
                     _CustomSlider(
                       value: localLineHeight, min: 1.4, max: 2.4,
                       activeColor: cs.primary,
@@ -199,9 +201,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
         children: [
           Container(color: Theme.of(context).scaffoldBackgroundColor),
           Positioned.fill(
-            child: CustomPaint(
-              painter: _PaperTexturePainter(cs.onSurface),
-            ),
+            child: CustomPaint(painter: _PaperTexturePainter(cs.onSurface)),
           ),
           SafeArea(
             child: Column(
@@ -233,11 +233,15 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                       child: _VerseList(
                         verses:          _chapter!.verses,
                         selectedVerseId: _selectedVerseId,
+                        highlights:      _highlights,
                         aiAnswers:       _aiAnswers,
                         aiLoading:       _aiLoading,
                         fontSize:        settings.fontSize,
                         lineHeight:      settings.lineHeight,
+                        showVerseNum:    settings.showVerseNum,
+                        showHighlight:   settings.showHighlight,
                         onVerseTap:      _onVerseTap,
+                        onHighlight:     _onHighlight,
                         onAskAI:         _askAI,
                       ),
                     ),
@@ -265,17 +269,13 @@ class _PaperTexturePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = baseColor.withOpacity(0.018)
-      ..strokeWidth = 1;
-
+    final paint = Paint()..color = baseColor.withOpacity(0.018);
     int rx = 127, ry = 311;
     int next() {
       rx = (rx * 1664525  + 1013904223) & 0xFFFFFFFF;
       ry = (ry * 22695477 + 1)          & 0xFFFFFFFF;
       return (rx ^ ry) & 0xFFFFFFFF;
     }
-
     for (int i = 0; i < 3000; i++) {
       final x = (next() % 10000) / 10000.0 * size.width;
       final y = (next() % 10000) / 10000.0 * size.height;
@@ -287,27 +287,25 @@ class _PaperTexturePainter extends CustomPainter {
   bool shouldRepaint(_PaperTexturePainter old) => old.baseColor != baseColor;
 }
 
-// ── 슬라이더 레이블 ────────────────────────────────────
+// ── 슬라이더 레이블 ──────────────────────────────────────
 class _SliderRow extends StatelessWidget {
   final String label, valueText;
   final ColorScheme cs;
   const _SliderRow({required this.label, required this.valueText, required this.cs});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(fontSize: 14, color: cs.onSurface)),
-        Text(valueText,
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: TextStyle(fontSize: 14, color: cs.onSurface)),
+      Text(valueText,
+          style: TextStyle(
+              fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
+    ],
+  );
 }
 
-// ── 커스텀 슬라이더 ────────────────────────────────────
+// ── 커스텀 슬라이더 ──────────────────────────────────────
 class _CustomSlider extends StatelessWidget {
   final double value, min, max;
   final Color  activeColor, inactiveColor;
@@ -384,7 +382,6 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Column(
       children: [
         Padding(
@@ -451,18 +448,24 @@ class _TopIconBtn extends StatelessWidget {
 class _VerseList extends StatelessWidget {
   final List<BibleVerseModel>    verses;
   final String?                  selectedVerseId;
+  final Map<String, Color>       highlights;
   final Map<String, String>      aiAnswers;
   final Map<String, bool>        aiLoading;
   final double                   fontSize;
   final double                   lineHeight;
+  final bool                     showVerseNum;
+  final bool                     showHighlight;
   final Function(String)         onVerseTap;
+  final Function(String)         onHighlight;
   final Function(String, String) onAskAI;
 
   const _VerseList({
-    required this.verses, required this.selectedVerseId,
-    required this.aiAnswers, required this.aiLoading,
-    required this.fontSize, required this.lineHeight,
-    required this.onVerseTap, required this.onAskAI,
+    required this.verses,       required this.selectedVerseId,
+    required this.highlights,   required this.aiAnswers,
+    required this.aiLoading,    required this.fontSize,
+    required this.lineHeight,   required this.showVerseNum,
+    required this.showHighlight, required this.onVerseTap,
+    required this.onHighlight,  required this.onAskAI,
   });
 
   @override
@@ -479,19 +482,31 @@ class _VerseList extends StatelessWidget {
         final aiAnswer    = aiAnswers[verseId];
         final isAiLoading = aiLoading[verseId] ?? false;
 
+        // showHighlight 꺼져있으면 하이라이트 색상 무시
+        final highlightColor =
+        showHighlight ? highlights[verseId] : null;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _VerseRow(
-              verseNum:   '${verse.verse}',
-              text:       verse.text,
-              isSelected: isSelected,
-              fontSize:   fontSize,
-              lineHeight: lineHeight,
-              onTap:      () => onVerseTap(verseId),
+              verseNum:       verseId,
+              text:           verse.text,
+              isSelected:     isSelected,
+              highlightColor: highlightColor,
+              fontSize:       fontSize,
+              lineHeight:     lineHeight,
+              showVerseNum:   showVerseNum,
+              onTap:          () => onVerseTap(verseId),
             ),
             if (isSelected)
-              _ActionBar(verseId: verseId, text: verse.text, onAskAI: onAskAI),
+              _ActionBar(
+                verseId:     verseId,
+                text:        verse.text,
+                isHighlighted: highlights.containsKey(verseId),
+                onHighlight: () => onHighlight(verseId),
+                onAskAI:     onAskAI,
+              ),
             if (isAiLoading) const _AiLoadingBubble(),
             if (aiAnswer != null && !isAiLoading) _AiBubble(answer: aiAnswer),
           ],
@@ -506,18 +521,27 @@ class _VerseRow extends StatelessWidget {
   final String       verseNum;
   final String       text;
   final bool         isSelected;
+  final Color?       highlightColor;
   final double       fontSize;
   final double       lineHeight;
+  final bool         showVerseNum;
   final VoidCallback onTap;
 
   const _VerseRow({
-    required this.verseNum, required this.text, required this.isSelected,
-    required this.fontSize, required this.lineHeight, required this.onTap,
+    required this.verseNum,   required this.text,
+    required this.isSelected, required this.highlightColor,
+    required this.fontSize,   required this.lineHeight,
+    required this.showVerseNum, required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    // 우선순위: 선택 > 하이라이트 > 투명
+    Color bgColor = Colors.transparent;
+    if (isSelected)              bgColor = cs.surfaceContainerHighest;
+    else if (highlightColor != null) bgColor = highlightColor!;
 
     return GestureDetector(
       onTap: onTap,
@@ -526,26 +550,28 @@ class _VerseRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 2),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
-          color: isSelected ? cs.surfaceContainerHighest : Colors.transparent,
+          color: bgColor,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 28,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  verseNum,
-                  style: GoogleFonts.ebGaramond(
-                    fontSize: 11, fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w700,
-                    color: cs.primary, height: lineHeight,
+            // 절 번호 — showVerseNum 이 false 면 숨김
+            if (showVerseNum)
+              SizedBox(
+                width: 28,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    verseNum,
+                    style: GoogleFonts.ebGaramond(
+                      fontSize: 11, fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w700,
+                      color: cs.primary, height: lineHeight,
+                    ),
                   ),
                 ),
               ),
-            ),
             Expanded(
               child: Text(
                 text,
@@ -566,9 +592,15 @@ class _VerseRow extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   final String               verseId;
   final String               text;
+  final bool                 isHighlighted;
+  final VoidCallback         onHighlight;
   final Function(String, String) onAskAI;
 
-  const _ActionBar({required this.verseId, required this.text, required this.onAskAI});
+  const _ActionBar({
+    required this.verseId,  required this.text,
+    required this.isHighlighted, required this.onHighlight,
+    required this.onAskAI,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -589,7 +621,13 @@ class _ActionBar extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           _ActionChip(
-              label: '하이라이트', icon: Icons.highlight_outlined, onTap: () {}),
+            label: isHighlighted ? '하이라이트 해제' : '하이라이트',
+            icon:  isHighlighted
+                ? Icons.highlight
+                : Icons.highlight_outlined,
+            isActive: isHighlighted,
+            onTap: onHighlight,
+          ),
           const SizedBox(width: 6),
           _ActionChip(
             label: 'AI 질문', icon: Icons.auto_awesome_outlined,
@@ -602,35 +640,45 @@ class _ActionBar extends StatelessWidget {
 }
 
 class _ActionChip extends StatelessWidget {
-  final String label; final IconData icon;
-  final bool isPrimary; final VoidCallback onTap;
+  final String       label;
+  final IconData     icon;
+  final bool         isPrimary;
+  final bool         isActive;
+  final VoidCallback onTap;
 
   const _ActionChip({
     required this.label, required this.icon, required this.onTap,
-    this.isPrimary = false,
+    this.isPrimary = false, this.isActive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    final bgColor = isPrimary
+        ? cs.primary
+        : isActive
+        ? cs.primary.withOpacity(0.15)
+        : cs.surfaceContainerHighest;
+    final fgColor = isPrimary ? cs.onPrimary : cs.secondary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isPrimary ? cs.primary : cs.surfaceContainerHighest,
+          color: bgColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13,
-                color: isPrimary ? cs.onPrimary : cs.secondary),
+            Icon(icon, size: 13, color: fgColor),
             const SizedBox(width: 4),
             Text(label,
                 style: GoogleFonts.ebGaramond(
                     fontSize: 12, fontWeight: FontWeight.w600,
-                    color: isPrimary ? cs.onPrimary : cs.secondary)),
+                    color: fgColor)),
           ],
         ),
       ),
