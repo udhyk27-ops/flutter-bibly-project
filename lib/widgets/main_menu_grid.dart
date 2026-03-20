@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../screens/bible_screen.dart';
+import '../screens/favorite_screen.dart';
 import '../screens/hymn_screen.dart';
+import '../screens/creed_screen.dart';
 import '../core/app_router.dart';
+import '../screens/search_screen.dart';
 
 class MainMenuGrid extends StatelessWidget {
   const MainMenuGrid({super.key});
@@ -42,7 +45,30 @@ class MainMenuGrid extends StatelessWidget {
         iconColor: cs.primary,
         labelStyle: tt.titleSmall!,
         subStyle: tt.labelMedium!,
-        onTap: () {},
+        onTap: () => Navigator.push(
+            context, AppRouter.slide(page: const FavoriteScreen())),
+      ),
+      _MenuItem(
+        icon: Icons.chrome_reader_mode_outlined,
+        label: '신앙고백',
+        sub: '사도신경 · 주기도문 · 십계명',
+        bgColor: cs.surfaceContainerHighest,
+        iconColor: cs.primary,
+        labelStyle: tt.titleSmall!,
+        subStyle: tt.labelMedium!,
+        onTap: () => Navigator.push(
+            context, AppRouter.slide(page: const CreedScreen())),
+      ),
+      _MenuItem(
+        icon: Icons.search_outlined,
+        label: '성경 검색',
+        sub: '키워드로 구절 찾기',
+        bgColor: cs.surfaceContainerHighest,
+        iconColor: cs.primary,
+        labelStyle: tt.titleSmall!,
+        subStyle: tt.labelMedium!,
+        onTap: () => Navigator.push(
+            context, AppRouter.slide(page: const SearchScreen())),
       ),
       _MenuItem(
         icon: Icons.auto_awesome_outlined,
@@ -52,7 +78,7 @@ class MainMenuGrid extends StatelessWidget {
         iconColor: cs.onPrimary,
         labelStyle: tt.titleSmall!.copyWith(color: cs.onPrimary),
         subStyle: tt.labelMedium!.copyWith(
-            color: cs.onPrimary.withOpacity(0.7)),
+            color: cs.onPrimary.withValues(alpha: 0.7)),
         onTap: () {},
       ),
     ];
@@ -70,13 +96,13 @@ class MainMenuGrid extends StatelessWidget {
 }
 
 class _MenuItem {
-  final IconData   icon;
-  final String     label;
-  final String     sub;
-  final Color      bgColor;
-  final Color      iconColor;
-  final TextStyle  labelStyle;
-  final TextStyle  subStyle;
+  final IconData     icon;
+  final String       label;
+  final String       sub;
+  final Color        bgColor;
+  final Color        iconColor;
+  final TextStyle    labelStyle;
+  final TextStyle    subStyle;
   final VoidCallback onTap;
 
   const _MenuItem({
@@ -109,10 +135,16 @@ class _MenuCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(item.icon, color: item.iconColor, size: 24),
-            const SizedBox(height: 8),
-            Text(item.label, style: item.labelStyle),
-            const SizedBox(height: 2),
+            // 아이콘 + 라벨 같은 행
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(item.label, style: item.labelStyle),
+                Icon(item.icon, color: item.iconColor, size: 22),
+              ],
+            ),
+            const SizedBox(height: 6),
             Text(item.sub, style: item.subStyle),
           ],
         ),

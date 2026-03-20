@@ -6,6 +6,7 @@ import '../model/bible_models.dart';
 import '../providers/reading_settings.dart';
 import '../services/bible_api_service.dart';
 import '../services/ai_service.dart';
+import '../services/favorite_service.dart';
 import '../services/recent_read_service.dart';
 
 class BibleReadingScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
 
   int     _currentChapter  = 1;
   String? _selectedVerseId;
+  bool _isFavorite = false;
 
   // verseId → 하이라이트 색상 (null 이면 미하이라이트)
   // 실제 저장 로직이 생기면 여기서 DB/서비스로 교체하세요.
@@ -68,6 +70,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
         chapter:    _currentChapter,
       );
       setState(() { _chapter = chapter; _isLoading = false; });
+      _loadFavoriteState();
     } catch (e) {
       setState(() { _error = e.toString(); _isLoading = false; });
     }
@@ -92,10 +95,34 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
     }
   }
 
+  Future<void> _loadFavoriteState() async {
+    final result = await FavoriteService.isFavorite(
+      widget.book.id, _currentChapter,
+    );
+    setState(() => _isFavorite = result);
+  }
+
   void _onVerseTap(String verseId) {
     setState(() {
       _selectedVerseId = (_selectedVerseId == verseId) ? null : verseId;
     });
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isFavorite) {
+      await FavoriteService.remove(widget.book.id, _currentChapter);
+    } else {
+      await FavoriteService.add(
+        bookId:          widget.book.id,
+        bookName:        widget.book.name,
+        bookEnglishName: widget.book.englishName,
+        bookNumber:      widget.book.number,
+        chapter:         _currentChapter,
+        totalChapters:   widget.book.totalChapters,
+        genre:           widget.book.genre,
+      );
+    }
+    setState(() => _isFavorite = !_isFavorite);
   }
 
   void _onHighlight(String verseId) {
@@ -210,6 +237,8 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                   book:          widget.book,
                   chapterNumber: _currentChapter,
                   onSettingsTap: () => _showSettingsSheet(context),
+                  isFavorite:    _isFavorite,
+                  onFavoriteTap: _toggleFavorite,
                 ),
                 Expanded(
                   child: _isLoading
@@ -374,9 +403,15 @@ class _TopBar extends StatelessWidget {
   final BibleBookModel book;
   final int            chapterNumber;
   final VoidCallback   onSettingsTap;
+  final bool           isFavorite;
+  final VoidCallback   onFavoriteTap;
 
   const _TopBar({
-    required this.book, required this.chapterNumber, required this.onSettingsTap,
+    required this.book,
+    required this.chapterNumber,
+    required this.onSettingsTap,
+    required this.isFavorite,
+    required this.onFavoriteTap,
   });
 
   @override
@@ -414,7 +449,11 @@ class _TopBar extends StatelessWidget {
                   ],
                 ),
               ),
-              _TopIconBtn(icon: Icons.star_outline,         cs: cs, onTap: () {}),
+              _TopIconBtn(
+                icon: isFavorite ? Icons.star : Icons.star_outline, // ✅
+                cs: cs,
+                onTap: onFavoriteTap,                               // ✅
+              ),
               const SizedBox(width: 8),
               _TopIconBtn(icon: Icons.text_fields_outlined, cs: cs, onTap: onSettingsTap),
             ],

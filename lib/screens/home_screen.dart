@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                     const SizedBox(height: 20),
                     const MainMenuGrid(),
                     const SizedBox(height: 20),
-                    RecentSection(key: ValueKey(_recentKey)), // 👈
+                    RecentSection(key: ValueKey(_recentKey)),
                     const SizedBox(height: 20),
                   ],
                 ),
