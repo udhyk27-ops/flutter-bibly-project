@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/bible_ai_screen.dart';
 import '../screens/bible_screen.dart';
 import '../screens/favorite_screen.dart';
 import '../screens/hymn_screen.dart';
@@ -79,7 +80,14 @@ class MainMenuGrid extends StatelessWidget {
         labelStyle: tt.titleSmall!.copyWith(color: cs.onPrimary),
         subStyle: tt.labelMedium!.copyWith(
             color: cs.onPrimary.withValues(alpha: 0.7)),
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            AppRouter.slide(
+              page: const BibleAiScreen(), // 구절 없이 그냥 진입
+            ),
+          );
+        },
       ),
     ];
 
