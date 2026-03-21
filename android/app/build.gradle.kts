@@ -12,7 +12,7 @@ dependencies {
     // Firebase 기본
     implementation("com.google.firebase:firebase-analytics")
 
-    // Firebase Functions 쓸 거면
+    // Firebase Functions
     implementation("com.google.firebase:firebase-functions")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
