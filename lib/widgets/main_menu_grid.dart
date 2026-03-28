@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/bible_ai_screen.dart';
-import '../screens/bible_screen.dart';
 import '../screens/favorite_screen.dart';
-import '../screens/hymn_screen.dart';
 import '../screens/creed_screen.dart';
 import '../core/app_router.dart';
 import '../screens/search_screen.dart';
@@ -16,28 +13,6 @@ class MainMenuGrid extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     final items = [
-      _MenuItem(
-        icon: Icons.menu_book_outlined,
-        label: '성경',
-        sub: '66권 · 구약/신약',
-        bgColor: cs.surfaceContainerHighest,
-        iconColor: cs.primary,
-        labelStyle: tt.titleSmall!,
-        subStyle: tt.labelMedium!,
-        onTap: () => Navigator.push(
-            context, AppRouter.slide(page: const BibleScreen())),
-      ),
-      _MenuItem(
-        icon: Icons.music_note_outlined,
-        label: '찬송가',
-        sub: '645장 수록',
-        bgColor: cs.surfaceContainerHighest,
-        iconColor: cs.primary,
-        labelStyle: tt.titleSmall!,
-        subStyle: tt.labelMedium!,
-        onTap: () => Navigator.push(
-            context, AppRouter.slide(page: const HymnScreen())),
-      ),
       _MenuItem(
         icon: Icons.star_outline,
         label: '즐겨찾기',
@@ -71,38 +46,32 @@ class MainMenuGrid extends StatelessWidget {
         onTap: () => Navigator.push(
             context, AppRouter.slide(page: const SearchScreen())),
       ),
-      _MenuItem(
-        icon: Icons.auto_awesome_outlined,
-        label: 'AI 질문',
-        sub: '말씀 해석·묵상',
-        bgColor: cs.primary,
-        iconColor: cs.onPrimary,
-        labelStyle: tt.titleSmall!.copyWith(color: cs.onPrimary),
-        subStyle: tt.labelMedium!.copyWith(
-            color: cs.onPrimary.withValues(alpha: 0.7)),
-        onTap: () {
-          Navigator.push(
-            context,
-            AppRouter.slide(
-              page: const BibleAiScreen(), // 구절 없이 그냥 진입
-            ),
-          );
-        },
-      ),
     ];
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
-      children: items.map((item) => _MenuCard(item: item)).toList(),
+    return Column(
+      children: [
+        // 상단 2개: 즐겨찾기 · 신앙고백
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _MenuCard(item: items[0])),
+              const SizedBox(width: 12),
+              Expanded(child: _MenuCard(item: items[1])),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // 하단 1개: 성경 검색 – 전체 너비로 넓게
+        _MenuCard(item: items[2], wide: true),
+      ],
     );
   }
 }
 
+// ────────────────────────────────────────────
+// Data model
+// ────────────────────────────────────────────
 class _MenuItem {
   final IconData     icon;
   final String       label;
@@ -125,38 +94,68 @@ class _MenuItem {
   });
 }
 
+// ────────────────────────────────────────────
+// Card widget
+// ────────────────────────────────────────────
 class _MenuCard extends StatelessWidget {
   final _MenuItem item;
-  const _MenuCard({required this.item});
+  /// true → 전체 너비, 가로로 넓은 레이아웃
+  final bool wide;
+
+  const _MenuCard({required this.item, this.wide = false});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: item.onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: item.bgColor,
           borderRadius: BorderRadius.circular(14),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 아이콘 + 라벨 같은 행
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(item.label, style: item.labelStyle),
-                Icon(item.icon, color: item.iconColor, size: 22),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(item.sub, style: item.subStyle),
-          ],
-        ),
+        child: wide ? _wideContent() : _squareContent(),
       ),
     );
   }
+
+  // 일반 카드 (정사각형에 가까운 레이아웃)
+  Widget _squareContent() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.max,
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(item.label, style: item.labelStyle),
+          Icon(item.icon, color: item.iconColor, size: 22),
+        ],
+      ),
+      const SizedBox(height: 6),
+      Text(item.sub, style: item.subStyle),
+    ],
+  );
+
+  // 와이드 카드 (아이콘·텍스트 수평 배치)
+  Widget _wideContent() => Row(
+    children: [
+      Icon(item.icon, color: item.iconColor, size: 22),
+      const SizedBox(width: 12),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(item.label, style: item.labelStyle),
+          const SizedBox(height: 2),
+          Text(item.sub, style: item.subStyle),
+        ],
+      ),
+      const Spacer(),
+      Icon(Icons.chevron_right,
+          color: item.iconColor.withValues(alpha: 0.5), size: 20),
+    ],
+  );
 }

@@ -5,6 +5,7 @@ import '../widgets/today_verse_card.dart';
 import '../widgets/main_menu_grid.dart';
 import '../widgets/recent_section.dart';
 import '../widgets/bottom_nav.dart';
+import '../widgets/weekly_reading.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -47,13 +48,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
                     const TodayVerseCard(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
+                    WeeklyReadingWidget(
+                      checkedDays: const {}, // 기능 구현 전: 빈 Set
+                      // 구현 후: ReadingService.checkedDaysThisWeek() 등 주입
+                    ),
+                    const SizedBox(height: 10),
                     const MainMenuGrid(),
                     const SizedBox(height: 20),
                     RecentSection(key: ValueKey(_recentKey)),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
