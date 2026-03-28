@@ -32,7 +32,13 @@ class WeeklyReadingWidget extends StatelessWidget {
         .map((d) => DateTime(d.year, d.month, d.day))
         .toSet();
 
+    // 이번 주 날짜와 교집합으로만 카운트
     final doneCount = days.where((d) => checked.contains(d)).length;
+
+    // 디버그용 — 확인 후 제거
+    debugPrint('checked: $checked');
+    debugPrint('days: $days');
+    debugPrint('doneCount: $doneCount');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -114,8 +120,9 @@ class _DayBadge extends StatelessWidget {
       circleBg = cs.primary;
       circleText = cs.onPrimary;
     } else if (isToday) {
-      circleBg = cs.primaryContainer;
-      circleText = cs.onPrimaryContainer;
+      // 미읽음 오늘: 배경 투명 + 테두리만
+      circleBg = Colors.transparent;
+      circleText = cs.onSurface.withValues(alpha: 0.8);
     } else if (isPast) {
       circleBg = cs.surfaceContainerLow;
       circleText = cs.onSurface.withValues(alpha: 0.35);

@@ -6,6 +6,7 @@ import '../widgets/main_menu_grid.dart';
 import '../widgets/recent_section.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/weekly_reading.dart';
+import '../services/reading_date_service.dart'; // 추가
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,11 +17,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   int _recentKey = 0;
+  Set<DateTime> _readDays = {};  // 추가
+
+  // 읽기 날짜 로드
+  Future<void> _loadReadDays() async {
+    final days = await ReadingDateService.checkedDaysThisWeek();
+    if (mounted) setState(() => _readDays = days);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReadDays(); // 추가
+  }
 
   @override
   void didPopNext() {
-    // 다른 화면에서 홈으로 돌아올 때 호출
     setState(() => _recentKey++);
+    _loadReadDays(); // 추가: 성경 화면에서 돌아올 때 날짜 갱신
   }
 
   @override
@@ -51,9 +65,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                     const SizedBox(height: 10),
                     const TodayVerseCard(),
                     const SizedBox(height: 10),
-                    WeeklyReadingWidget(
-                      checkedDays: const {}, // 기능 구현 전: 빈 Set
-                      // 구현 후: ReadingService.checkedDaysThisWeek() 등 주입
+                    AbsorbPointer(
+                      child: WeeklyReadingWidget(checkedDays: _readDays), // 수정
                     ),
                     const SizedBox(height: 10),
                     const MainMenuGrid(),

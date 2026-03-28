@@ -7,8 +7,10 @@ import '../providers/reading_settings.dart';
 import '../services/bible_api_service.dart';
 import '../services/ai_service.dart';
 import '../services/favorite_service.dart';
+import '../services/reading_date_service.dart';
 import '../services/recent_read_service.dart';
 
+/// 성경 읽기 페이지
 class BibleReadingScreen extends StatefulWidget {
   final BibleBookModel book;
   final int            chapterNumber;
@@ -53,6 +55,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       _selectedVerseId = null;
     });
 
+    /// 최근 읽은
     await RecentReadService.save(
       bookName:        widget.book.name,
       bookEnglishName: widget.book.englishName,
@@ -63,6 +66,9 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       totalChapters:   widget.book.totalChapters,
       chapter:         _currentChapter,
     );
+
+    /// 이번 주 성경 읽기 출석체크
+    await ReadingDateService.markToday();
 
     try {
       final chapter = await BibleApiService.getChapter(
