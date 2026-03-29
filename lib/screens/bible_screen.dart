@@ -124,7 +124,7 @@ class _BibleScreenState extends State<BibleScreen>
                   ? _EmptyView()
                   : _BookList(books: _filtered),
             ),
-            const BottomNav(activeIndex: 1),
+            BottomNav(activeIndex: 1),
           ],
         ),
       ),

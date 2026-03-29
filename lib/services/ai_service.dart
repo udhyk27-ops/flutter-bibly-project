@@ -60,7 +60,7 @@ class AiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'verse': verseText,
-        'question': '이 구절의 의미와 묵상 포인트를 설명해주세요.',
+        'question': '이 구절을 2~3문장으로 간결하게 설명해주세요.',
       }),
     );
 

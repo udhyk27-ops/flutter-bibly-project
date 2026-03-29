@@ -34,15 +34,18 @@ class BottomNav extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     final items = [
-      _NavItem(icon: Icons.home_outlined,       label: '홈'),
-      _NavItem(icon: Icons.menu_book_outlined,  label: '성경'),
-      _NavItem(icon: Icons.music_note_outlined, label: '찬송가'),
-      _NavItem(icon: Icons.settings_outlined,   label: '설정'),
+      _NavItem(icon: Icons.home_outlined,       activeIcon: Icons.home,          label: '홈'),
+      _NavItem(icon: Icons.menu_book_outlined,  activeIcon: Icons.menu_book,     label: '성경'),
+      _NavItem(icon: Icons.music_note_outlined, activeIcon: Icons.music_note,    label: '찬송가'),
+      _NavItem(icon: Icons.settings_outlined,   activeIcon: Icons.settings,      label: '설정'),
     ];
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: cs.outline, width: 0.5)),
+        border: Border(top: BorderSide(
+          color: cs.outlineVariant.withValues(alpha: 0.3),
+          width: 0.5,
+        )),
         color: Theme.of(context).scaffoldBackgroundColor,
       ),
       padding: const EdgeInsets.only(bottom: 16, top: 8),
@@ -50,7 +53,6 @@ class BottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (i) {
           final isActive = i == activeIndex;
-          final color    = isActive ? cs.primary : cs.outline;
           return GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => _onTap(context, i),
@@ -59,20 +61,22 @@ class BottomNav extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(items[i].icon, color: color, size: 24),
+                  // 활성 탭: filled 아이콘으로만 구분
+                  Icon(
+                    isActive ? items[i].activeIcon : items[i].icon,
+                    color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.45),
+                    size: 24,
+                  ),
                   const SizedBox(height: 3),
                   Text(
                     items[i].label,
-                    style: tt.labelSmall?.copyWith(color: color),
-                  ),
-                  if (isActive) ...[
-                    const SizedBox(height: 3),
-                    Container(
-                      width: 4, height: 4,
-                      decoration: BoxDecoration(
-                          color: color, shape: BoxShape.circle),
+                    style: tt.labelSmall?.copyWith(
+                      color: isActive
+                          ? cs.primary
+                          : cs.onSurface.withValues(alpha: 0.45),
+                      fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -85,6 +89,7 @@ class BottomNav extends StatelessWidget {
 
 class _NavItem {
   final IconData icon;
+  final IconData activeIcon;
   final String   label;
-  const _NavItem({required this.icon, required this.label});
+  const _NavItem({required this.icon, required this.activeIcon, required this.label});
 }

@@ -39,28 +39,15 @@ exports.askBible = onRequest(
       const genAI = new GoogleGenerativeAI(geminiApiKey.value());
       const model = genAI.getGenerativeModel({ model: aiModel });
 
-      const prompt = verse
-        ? `
-당신은 성경 말씀을 깊이 이해하는 신학적 AI 도우미입니다.
-사용자의 질문에 대해 사용자가 사용한 언어로 답변해주세요.
+    const prompt = `
+        당신은 성경 말씀을 돕는 AI입니다.
+        자투리 단어 없이 질문에 대한 답변만 존댓말로 답변하세요.
+        형식은 "이 구절은 ~~~ 입니다." 로만 답변해주세요.
+        반드시 2문장으로만 답변하세요. 그 이상 절대 쓰지 마세요.
 
-[성경 구절]
-${verse}
-
-[사용자 질문]
-${question}
-
-위 구절을 바탕으로 질문에 성실하고 따뜻하게 답변해주세요.
-        `
-        : `
-당신은 성경 말씀을 깊이 이해하는 신학적 AI 도우미입니다.
-사용자의 질문에 대해 사용자가 사용한 언어로 답변해주세요.
-
-[사용자 질문]
-${question}
-
-성실하고 따뜻하게 답변해주세요.
-        `;
+        [구절] ${verse}
+        [질문] ${question}
+    `;
 
       const result = await model.generateContent(prompt);
       return res.status(200).json({ answer: result.response.text() });
