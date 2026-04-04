@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../model/bible_models.dart';
@@ -10,7 +13,6 @@ import '../services/favorite_service.dart';
 import '../services/reading_date_service.dart';
 import '../services/recent_read_service.dart';
 
-/// 성경 읽기 페이지
 class BibleReadingScreen extends StatefulWidget {
   final BibleBookModel book;
   final int            chapterNumber;
@@ -32,21 +34,87 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
 
   int     _currentChapter  = 1;
   String? _selectedVerseId;
-  bool _isFavorite = false;
+  bool    _isFavorite      = false;
 
-  // verseId → 하이라이트 색상 (null 이면 미하이라이트)
-  // 실제 저장 로직이 생기면 여기서 DB/서비스로 교체하세요.
-  final Map<String, Color> _highlights = {};
+  final Map<String, Color>  _highlights = {};
+  final Map<String, String> _aiAnswers  = {};
+  final Map<String, bool>   _aiLoading  = {};
 
-  final Map<String, String> _aiAnswers = {};
-  final Map<String, bool>   _aiLoading = {};
+  // ── TTS ──────────────────────────────────────────────
+  final FlutterTts _tts       = FlutterTts();
+  bool _isSpeaking    = false;
+  bool _verseIsPlaying = false;  // 절 하나가 재생 중인지 추적
 
   @override
   void initState() {
     super.initState();
     _currentChapter = widget.chapterNumber;
+    _initTts();
     _loadChapter();
   }
+
+  Future<void> _initTts() async {
+    await _tts.setLanguage('ko-KR');
+    await _tts.setSpeechRate(0.4);
+    await _tts.setVolume(1.0);
+    await _tts.setPitch(0.88);
+    await _tts.setVoice({'name': 'ko-kr-x-kod-local', 'locale': 'ko-KR'});
+
+    _tts.setCompletionHandler(() {
+      _verseIsPlaying = false;
+    });
+    _tts.setErrorHandler((_) {
+      _verseIsPlaying = false;
+      if (mounted) setState(() => _isSpeaking = false);
+    });
+  }
+
+  // 쉼표·마침표 뒤에 짧은 공백 삽입해서 자연스럽게 호흡
+  String _addBreaths(String text) {
+    return text
+        .replaceAll(RegExp(r'([,，、])'), r'\1  ')   // 쉼표 뒤 짧은 숨
+        .replaceAll(RegExp(r'([.。!！?？])'), r'\1   '); // 문장 끝 조금 더 쉼
+  }
+
+  Future<void> _toggleChapterSpeak() async {
+    if (_isSpeaking) {
+      await _tts.stop();
+      setState(() => _isSpeaking = false);
+      return;
+    }
+    if (_chapter == null) return;
+
+    setState(() => _isSpeaking = true);
+
+    for (final verse in _chapter!.verses) {
+      if (!_isSpeaking) break;
+
+      final text = _addBreaths(verse.text);
+
+      // 이 절이 끝날 때까지 기다리는 Completer
+      final completer = Completer<void>();
+      _tts.setCompletionHandler(() => completer.complete());
+      _tts.setErrorHandler((_) {
+        if (!completer.isCompleted) completer.complete();
+        if (mounted) setState(() => _isSpeaking = false);
+      });
+
+      await _tts.speak(text);
+      await completer.future;  // 이 절 읽기 완료까지 대기
+
+      // 절 사이 1.5초 휴식
+      if (_isSpeaking) await Future.delayed(const Duration(milliseconds: 1500));
+    }
+
+    if (mounted) setState(() => _isSpeaking = false);
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+  // ─────────────────────────────────────────────────────
 
   Future<void> _loadChapter() async {
     setState(() {
@@ -55,7 +123,10 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       _selectedVerseId = null;
     });
 
-    /// 최근 읽은
+    // 장 이동 시 재생 중이면 정지
+    await _tts.stop();
+    setState(() => _isSpeaking = false);
+
     await RecentReadService.save(
       bookName:        widget.book.name,
       bookEnglishName: widget.book.englishName,
@@ -67,7 +138,6 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       chapter:         _currentChapter,
     );
 
-    /// 이번 주 성경 읽기 출석체크
     await ReadingDateService.markToday();
 
     try {
@@ -102,9 +172,7 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
   }
 
   Future<void> _loadFavoriteState() async {
-    final result = await FavoriteService.isFavorite(
-      widget.book.id, _currentChapter,
-    );
+    final result = await FavoriteService.isFavorite(widget.book.id, _currentChapter);
     setState(() => _isFavorite = result);
   }
 
@@ -136,7 +204,6 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
       if (_highlights.containsKey(verseId)) {
         _highlights.remove(verseId);
       } else {
-        // 기본 하이라이트 색상 — 테마 primary 를 연하게
         final cs = Theme.of(context).colorScheme;
         _highlights[verseId] = cs.primary.withOpacity(0.15);
       }
@@ -242,14 +309,15 @@ class _BibleReadingScreenState extends State<BibleReadingScreen> {
                 _TopBar(
                   book:          widget.book,
                   chapterNumber: _currentChapter,
+                  isSpeaking:    _isSpeaking,        // ✅
+                  onSpeakTap:    _toggleChapterSpeak, // ✅
                   onSettingsTap: () => _showSettingsSheet(context),
                   isFavorite:    _isFavorite,
                   onFavoriteTap: _toggleFavorite,
                 ),
                 Expanded(
                   child: _isLoading
-                      ? Center(
-                      child: CircularProgressIndicator(color: cs.primary))
+                      ? Center(child: CircularProgressIndicator(color: cs.primary))
                       : _error != null
                       ? _ErrorView(error: _error!, onRetry: _loadChapter)
                       : _chapter == null
@@ -334,8 +402,7 @@ class _SliderRow extends StatelessWidget {
     children: [
       Text(label, style: TextStyle(fontSize: 14, color: cs.onSurface)),
       Text(valueText,
-          style: TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
     ],
   );
 }
@@ -408,6 +475,8 @@ class _CustomSlider extends StatelessWidget {
 class _TopBar extends StatelessWidget {
   final BibleBookModel book;
   final int            chapterNumber;
+  final bool           isSpeaking;    // ✅
+  final VoidCallback   onSpeakTap;    // ✅
   final VoidCallback   onSettingsTap;
   final bool           isFavorite;
   final VoidCallback   onFavoriteTap;
@@ -415,6 +484,8 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.book,
     required this.chapterNumber,
+    required this.isSpeaking,
+    required this.onSpeakTap,
     required this.onSettingsTap,
     required this.isFavorite,
     required this.onFavoriteTap,
@@ -455,10 +526,19 @@ class _TopBar extends StatelessWidget {
                   ],
                 ),
               ),
+              // ✅ 재생/정지 버튼
               _TopIconBtn(
-                icon: isFavorite ? Icons.star : Icons.star_outline, // ✅
+                icon: isSpeaking
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_circle_outline,
                 cs: cs,
-                onTap: onFavoriteTap,                               // ✅
+                onTap: onSpeakTap,
+              ),
+              const SizedBox(width: 8),
+              _TopIconBtn(
+                icon: isFavorite ? Icons.star : Icons.star_outline,
+                cs: cs,
+                onTap: onFavoriteTap,
               ),
               const SizedBox(width: 8),
               _TopIconBtn(icon: Icons.text_fields_outlined, cs: cs, onTap: onSettingsTap),
@@ -505,12 +585,12 @@ class _VerseList extends StatelessWidget {
   final Function(String, String) onAskAI;
 
   const _VerseList({
-    required this.verses,       required this.selectedVerseId,
-    required this.highlights,   required this.aiAnswers,
-    required this.aiLoading,    required this.fontSize,
-    required this.lineHeight,   required this.showVerseNum,
+    required this.verses,        required this.selectedVerseId,
+    required this.highlights,    required this.aiAnswers,
+    required this.aiLoading,     required this.fontSize,
+    required this.lineHeight,    required this.showVerseNum,
     required this.showHighlight, required this.onVerseTap,
-    required this.onHighlight,  required this.onAskAI,
+    required this.onHighlight,   required this.onAskAI,
   });
 
   @override
@@ -526,10 +606,7 @@ class _VerseList extends StatelessWidget {
         final isSelected  = selectedVerseId == verseId;
         final aiAnswer    = aiAnswers[verseId];
         final isAiLoading = aiLoading[verseId] ?? false;
-
-        // showHighlight 꺼져있으면 하이라이트 색상 무시
-        final highlightColor =
-        showHighlight ? highlights[verseId] : null;
+        final highlightColor = showHighlight ? highlights[verseId] : null;
 
         return AnimatedSize(
           duration: const Duration(milliseconds: 200),
@@ -550,11 +627,11 @@ class _VerseList extends StatelessWidget {
               ),
               if (isSelected)
                 _ActionBar(
-                  verseId:     verseId,
-                  text:        verse.text,
+                  verseId:       verseId,
+                  text:          verse.text,
                   isHighlighted: highlights.containsKey(verseId),
-                  onHighlight: () => onHighlight(verseId),
-                  onAskAI:     onAskAI,
+                  onHighlight:   () => onHighlight(verseId),
+                  onAskAI:       onAskAI,
                 ),
               if (isAiLoading) const _AiLoadingBubble(),
               if (aiAnswer != null && !isAiLoading) _AiBubble(answer: aiAnswer),
@@ -588,9 +665,8 @@ class _VerseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    // 우선순위: 선택 > 하이라이트 > 투명
     Color bgColor = Colors.transparent;
-    if (isSelected)              bgColor = cs.surfaceContainerHighest;
+    if (isSelected)                  bgColor = cs.surfaceContainerHighest;
     else if (highlightColor != null) bgColor = highlightColor!;
 
     return GestureDetector(
@@ -606,7 +682,6 @@ class _VerseRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 절 번호 — showVerseNum 이 false 면 숨김
             if (showVerseNum)
               SizedBox(
                 width: 28,
@@ -672,9 +747,7 @@ class _ActionBar extends StatelessWidget {
           const SizedBox(width: 6),
           _ActionChip(
             label: isHighlighted ? '하이라이트 해제' : '하이라이트',
-            icon:  isHighlighted
-                ? Icons.highlight
-                : Icons.highlight_outlined,
+            icon:  isHighlighted ? Icons.highlight : Icons.highlight_outlined,
             isActive: isHighlighted,
             onTap: onHighlight,
           ),
@@ -757,8 +830,7 @@ class _AiLoadingBubble extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(width: 14, height: 14,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: cs.primary)),
+              child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary)),
           const SizedBox(width: 8),
           Text('AI가 해석 중이에요…',
               style: TextStyle(fontSize: 12, color: cs.secondary)),
@@ -952,8 +1024,7 @@ class _ErrorView extends StatelessWidget {
           Icon(Icons.wifi_off_outlined, size: 48, color: cs.outline),
           const SizedBox(height: 12),
           Text('불러오기 실패',
-              style: GoogleFonts.notoSerifKr(
-                  fontSize: 15, color: cs.onSurface)),
+              style: GoogleFonts.notoSerifKr(fontSize: 15, color: cs.onSurface)),
           const SizedBox(height: 6),
           Text(error,
               style: TextStyle(fontSize: 12, color: cs.secondary),
@@ -962,8 +1033,7 @@ class _ErrorView extends StatelessWidget {
           GestureDetector(
             onTap: onRetry,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 color: cs.primary,
                 borderRadius: BorderRadius.circular(10),

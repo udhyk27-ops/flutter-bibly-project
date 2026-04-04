@@ -5,8 +5,11 @@ class ReadingSettings extends ChangeNotifier {
   double _fontSize   = 17.0;
   double _lineHeight = 1.9;
 
+  double _speechRate = 0.4;   // ✅ 고정값으로 맞춤
+  double _pitch      = 0.88;  // ✅ 고정값으로 맞춤
+
   // ── 표시 옵션 ────────────────────────────────────
-  bool _showVerseNum = true;
+  bool _showVerseNum  = true;
   bool _showHighlight = true;
 
   // ── 번역본 / 언어 ────────────────────────────────
@@ -16,10 +19,15 @@ class ReadingSettings extends ChangeNotifier {
   // getters
   double get fontSize      => _fontSize;
   double get lineHeight    => _lineHeight;
+  double get speechRate    => _speechRate;
+  double get pitch         => _pitch;
   bool   get showVerseNum  => _showVerseNum;
   bool   get showHighlight => _showHighlight;
   String get translation   => _translation;
   String get language      => _language;
+
+  void setSpeechRate(double v) { _speechRate = v; notifyListeners(); }
+  void setPitch(double v)      { _pitch = v;      notifyListeners(); }
 
   void setFontSize(double v) {
     if (_fontSize == v) return;
